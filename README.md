@@ -25,6 +25,7 @@ The game itself is played on a separate platform; this repo is the rules engine 
 | `domino/turn_manager.py` | Whose turn it is, counting passes |
 | `domino/game.py` | `Game`: ties it all together for the platform |
 | `main.py` | Developer check: plays one random game and prints the result |
+| `tools/play.py` | Developer tool: play a game in the terminal against a simple bot |
 | `tests/` | Unit tests |
 
 ## Using it from the platform
@@ -46,6 +47,7 @@ Illegal actions raise `ValueError` and leave the game unchanged.
 ## Running
 
 ```
-python main.py 4                                  # play one random 4-player game
+python main.py                                    # play one random game
+python -m tools.play                              # play against a bot in the terminal
 python -m unittest discover -s tests -t .         # run the tests
 ```
