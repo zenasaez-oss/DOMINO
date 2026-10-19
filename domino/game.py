@@ -15,9 +15,9 @@ from .player import Player
 from .turn_manager import TurnManager
 
 # --- presets ---
-PLAYER_OPTIONS = (2, 3, 4)
+PLAYER_OPTIONS = (2,)   # two-player game only
 MAX_PIP = 6          # double-six set, 28 tiles
-TILES_PER_PLAYER = 7  # TODO: revisit - with 4 players this deals all 28 tiles, boneyard is empty
+TILES_PER_PLAYER = 7  # 2 players x 7 = 14 dealt, 14 left in the boneyard
 
 
 def check_player_count(n_players):
