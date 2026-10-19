@@ -1,14 +1,14 @@
 import unittest
 
 from domino.board import LEFT, RIGHT
-from domino.game import Game, draw_tile, new_game, play_move
+from domino.game import Game, check_player_count, draw_tile, new_game, play_move
 from domino.player import Player
 from domino.rules import first_player
 
 
 def make_game(hands, boneyard=()):
     """Game with fixed hands instead of a random deal."""
-    game = Game.with_n_players(len(hands))
+    game = Game.quick_start()
     for player, hand in zip(game.players, hands):
         player.hand = list(hand)
     game.boneyard = list(boneyard)
@@ -18,15 +18,16 @@ def make_game(hands, boneyard=()):
 
 class TestFunctions(unittest.TestCase):
     def test_new_game_deals_7_each(self):
-        hands, boneyard, board = new_game(2)
+        hands, boneyard, board = new_game()
         self.assertEqual([len(h) for h in hands], [7, 7])
         self.assertEqual(len(boneyard), 14)
         self.assertEqual(board, [])
 
     def test_only_two_players(self):
+        check_player_count(2)
         for n in (1, 3, 4):
             with self.assertRaises(ValueError):
-                new_game(n)
+                check_player_count(n)
 
     def test_play_move(self):
         hand, board = [(3, 5), (5, 6)], [(1, 3)]
@@ -114,7 +115,7 @@ class TestGame(unittest.TestCase):
     def test_random_games_finish(self):
         from main import auto_play
         for _ in range(600):
-            game = auto_play(Game.with_n_players(2))
+            game = auto_play(Game.quick_start())
             self.assertTrue(game.finished)
             total = len(game.board) + len(game.boneyard) + sum(len(h) for h in game.hands)
             self.assertEqual(total, 28)

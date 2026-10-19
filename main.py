@@ -25,7 +25,7 @@ def auto_play(game):
 
 
 if __name__ == "__main__":
-    game = auto_play(Game.with_n_players(2))
+    game = auto_play(Game.quick_start())
     state = game.state()
     print("Board:", " ".join(f"[{a}|{b}]" for a, b in state["board"]))
     print("Tiles left:", [p["tiles_left"] for p in state["players"]])
