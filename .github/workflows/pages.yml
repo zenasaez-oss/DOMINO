@@ -1,0 +1,46 @@
+# Publishes the web page on GitHub Pages every time main changes.
+# The page (web/) loads the Python engine (domino/, tools/) in the browser,
+# so all three folders are published together.
+# One-time setup on GitHub: Settings -> Pages -> Source: "GitHub Actions".
+name: Publish web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the tests first
+        run: python -m unittest discover -s tests -t .
+
+      - name: Build the site
+        run: |
+          mkdir _site
+          cp -r web domino tools _site/
+          find _site -name "__pycache__" -prune -exec rm -rf {} +
+          # the site's address opens the game directly
+          echo '<meta http-equiv="refresh" content="0; url=web/">' > _site/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

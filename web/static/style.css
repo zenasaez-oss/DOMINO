@@ -1,0 +1,955 @@
+/* A casino table in a dark wine cellar: the only strong light falls on the green felt.
+   The chalk history and the rules stand beside the table, Paco sits across from you
+   with his glass of wine on a coaster. One look on purpose (no light theme). */
+:root {
+  color-scheme: dark;
+
+  /* colour */
+  --sky: #140b10;          /* the room */
+  --sky-high: #3f1426;     /* warm glow at the top */
+  --panel: #2a1520;
+  --panel-line: #4b2536;
+  --ink: #fff7ea;
+  --ink-soft: #d7c2c9;
+  --felt: #18804f;         /* the table */
+  --felt-deep: #0c4a2c;
+  --rail: #2a170e;         /* the padded edge */
+  --rail-light: #4a2a18;
+  --gold: #e9c46a;
+  --wood: #8b5a2b;
+  --wood-dark: #5a3818;
+  --wood-light: #b07a42;
+  --ivory: #fffaf0;
+  --ivory-edge: #e0d3b8;
+  --pip: #1d1a17;
+  --sun: #ffbe0b;          /* you, your turn, main buttons */
+  --sun-deep: #c48a00;
+  --sun-ink: #2e1f00;
+  --coral: #ff7b54;        /* Paco */
+  --coral-deep: #c9512f;
+  --bulb: #ffd36e;
+  --slate: #2c3a33;        /* the chalkboard */
+  --slate-deep: #1f2924;
+  --chalk: #f3f1e8;
+
+  /* Paco */
+  --skin: #f2c4a0;
+  --skin-shade: #dfa784;
+  --hair: #f6f3ec;
+  --cap: #5c4636;
+  --cap-dark: #46342a;
+  --cardigan: #2f7a64;
+  --cardigan-dark: #225a4a;
+  --shirt: #fdfaf3;
+  --frame: #2b211c;
+  --mouth: #6e2a1f;
+  --cheek: #ea8a70;
+  --chair: #4a2d14;
+
+  /* type */
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-chalk: "Caveat", "Segoe Print", "Comic Sans MS", cursive;
+  --font-serif: "Bodoni Moda", "Didot", "Georgia", serif;   /* the title and the felt's printing */
+
+  /* tiles: a horizontal tile is two squares side by side */
+  --tile-w: 76px;
+  --tile-h: 38px;
+
+  /* Paco's drawing: 180 x 230 units, his forearms start 34 units above the bottom */
+  --fig-w: 230px;
+  --slate-w: 240px;        /* the history, beside the table */
+}
+
+* { box-sizing: border-box; }
+[hidden], .turn:empty { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(900px 420px at 50% 0%, var(--sky-high) 0%, transparent 75%),
+    var(--sky);
+  color: var(--ink);
+  font: 600 15px/1.5 var(--font-body);
+  overflow-x: hidden;
+}
+h1, h2 { margin: 0; font-family: var(--font-display); font-weight: 400; text-wrap: balance; }
+
+/* the back wall: a wine cellar (drawn by app.js), dimmed and fading into the room */
+.room {
+  position: absolute;
+  z-index: -1;                   /* behind everything on the page */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 660px;
+  overflow: hidden;
+}
+.room svg { width: 100%; height: 100%; display: block; filter: saturate(1) brightness(0.9); }
+.room::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 45% 55% at 50% 100%, rgba(255, 214, 150, 0.14), transparent 70%),
+    linear-gradient(180deg, rgba(20, 11, 16, 0.12) 0%, rgba(20, 11, 16, 0.3) 60%, var(--sky) 100%);
+}
+
+
+/* --- buttons: chunky, like a game --- */
+.btn {
+  font: 400 1.05rem var(--font-display);
+  letter-spacing: 0.02em;
+  padding: 10px 20px 8px;
+  border-radius: 14px;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.15s;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:focus-visible, select:focus-visible, .tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.btn-play {
+  background: var(--sun);
+  color: var(--sun-ink);
+  box-shadow: 0 5px 0 var(--sun-deep), 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+.btn-play:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-play:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--sun-deep); }
+.btn-action {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 4px 0 #15173a;
+}
+.btn-action.attention {
+  background: var(--sun);
+  color: var(--sun-ink);
+  box-shadow: 0 4px 0 var(--sun-deep);
+  animation: nudge 1.4s ease-in-out infinite;
+}
+.btn-action:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #15173a; }
+@keyframes nudge { 50% { transform: translateY(-3px); } }
+.btn-side {
+  background: var(--sun);
+  color: var(--sun-ink);
+  box-shadow: 0 4px 0 var(--sun-deep);
+}
+
+select {
+  font: 700 0.95rem var(--font-body);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--panel-line);
+  background: var(--panel);
+  color: var(--ink);
+  max-width: 100%;
+}
+
+/* --- header --- */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-block: 10px 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px 12px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #3a1322, #220b14);
+  border: 2px solid var(--gold);
+  box-shadow: 0 6px 0 #12060b, 0 0 30px rgba(233, 196, 106, 0.15);
+}
+.top h1 {
+  font: 900 2.4rem/1 "Playfair Display", "Georgia", serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f4d27c;
+  text-shadow: 0 2px 0 #6b4a12, 0 4px 10px rgba(0, 0, 0, 0.6);
+}
+.tagline {
+  margin: 6px 0 0;
+  font: italic 600 0.95rem var(--font-serif);
+  letter-spacing: 0.04em;
+  color: #e8d6b0;
+}
+.brand-tile { width: 30px; height: 54px; flex-shrink: 0; transform: rotate(-8deg); filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5)); }
+.brand-tile rect { fill: #151112; stroke: var(--gold); stroke-width: 2; }
+.brand-tile line { stroke: var(--gold); stroke-width: 1.5; }
+.brand-pips circle { fill: #f6f0e2; }
+.controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+
+/* --- layout --- */
+/* the table takes the full width; scoreboard and rules sit underneath */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-block: 0 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.game { display: grid; gap: 16px; min-width: 0; }
+
+/* --- Paco, across the table --- */
+.opponent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--fig-w) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  /* his forearms and tiles rest on the table: pull the table up under them */
+  margin-bottom: calc(-16px - var(--fig-w) * 34 / 180);
+  /* keep him centred over the table, not over the table and the history */
+  padding-right: calc(var(--slate-w) + 18px);
+}
+/* his name on a small round badge, readable against the shelves */
+.opponent-info {
+  justify-self: end;
+  align-self: center;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  background: radial-gradient(circle at 50% 35%, #3a1322, #1c0a10);
+  border: 2px solid var(--gold);
+  box-shadow: 0 5px 0 #12060b, 0 0 20px rgba(0, 0, 0, 0.5);
+}
+.opponent-name { font-size: 1.5rem; line-height: 1; color: var(--coral); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); }
+.opponent-tiles { font-size: 0.78rem; font-weight: 800; color: var(--ink-soft); margin-top: 2px; }
+
+.figure {
+  position: relative;            /* no z-index: his layers sit around the table's */
+  width: var(--fig-w);
+  aspect-ratio: 180 / 230;
+  align-self: end;
+}
+/* a warm light on him when it's his turn */
+.figure::before {
+  content: "";
+  position: absolute;
+  inset: 4% -12% 18%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 123, 84, 0.45), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.opponent.active .figure::before { opacity: 1; }
+.paco {
+  position: relative;
+  z-index: 1;                    /* behind the table */
+  width: 100%;
+  height: 100%;
+  display: block;
+  animation: breathe 4s ease-in-out infinite;
+}
+@keyframes breathe { 50% { transform: translateY(1.5px); } }
+.paco-front {
+  position: absolute;
+  inset: 0;
+  z-index: 3;                    /* in front of the table */
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* the tiles in his hands */
+.fan {
+  --u: calc(var(--fig-w) / 180);
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(var(--u) * 12);
+  width: 0;
+  height: 0;
+}
+.fan .tile-back {
+  position: absolute;
+  left: calc(var(--u) * -10);
+  bottom: 0;
+  width: calc(var(--u) * 20);
+  height: calc(var(--u) * 36);
+  border-radius: calc(var(--u) * 3.5);
+  background: repeating-linear-gradient(45deg, var(--coral-deep), var(--coral-deep) 3px, var(--coral) 3px, var(--coral) 6px);
+  border: 2px solid #8f3720;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  transform-origin: 50% 110%;
+  transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * var(--step)));
+}
+
+/* his glass, on a cork coaster on the table to his right */
+.posavasos {
+  --u: calc(var(--fig-w) / 180);
+  position: absolute;
+  z-index: 3;                    /* on the table, in front of it */
+  left: calc(100% - var(--u) * 4);
+  bottom: calc(var(--u) * -8);
+  width: calc(var(--u) * 40);
+  height: calc(var(--u) * 77);
+  overflow: visible;
+}
+.p-coaster-edge { fill: #7a5530; }
+.p-coaster { fill: #c4975f; }
+.p-coaster-ring { fill: none; stroke: #a87a45; stroke-width: 1.2; }
+.c-glass { fill: rgba(255, 255, 255, 0.55); stroke: rgba(255, 255, 255, 0.8); stroke-width: 0.6; }
+.c-bowl { fill: rgba(255, 255, 255, 0.1); stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.4; }
+.c-surface { fill: #e0435f; opacity: 0.85; }
+.c-shine { fill: none; stroke: rgba(255, 255, 255, 0.75); stroke-width: 2; stroke-linecap: round; }
+/* when he wins, he raises his glass */
+.c-lift { transform-box: fill-box; transform-origin: 50% 100%; }
+.opponent.cheers .c-lift { animation: cheers 1s ease-in-out; }
+@keyframes cheers { 30% { transform: translateY(-12px) rotate(-14deg); } 65% { transform: translateY(-12px) rotate(10deg); } }
+
+/* the speech bubble */
+.bubble {
+  position: relative;
+  justify-self: start;
+  align-self: center;
+  max-width: 340px;
+  background: var(--ivory);
+  color: #2a2420;
+  font: 800 1.02rem/1.4 var(--font-body);
+  padding: 14px 18px;
+  border-radius: 20px;
+  border: 3px solid #2a2420;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3);
+  margin-bottom: calc(var(--fig-w) * 0.35);
+}
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  margin-top: -11px;
+  border: 11px solid transparent;
+  border-right: 15px solid #2a2420;
+  border-left: 0;
+}
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  margin-top: -8px;
+  border: 8px solid transparent;
+  border-right: 11px solid var(--ivory);
+  border-left: 0;
+}
+.bubble.pop { animation: pop 0.3s cubic-bezier(0.3, 1.6, 0.6, 1); }
+@keyframes pop { from { transform: scale(0.8); opacity: 0; } }
+.bubble .tile-name { white-space: nowrap; color: var(--coral-deep); }
+.dots { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: #2a2420; animation: dot 1s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot { 40% { transform: translateY(-6px); } }
+
+/* Paco's drawing */
+.p-chair { fill: var(--chair); }
+.p-chair-slat { fill: #5e3a1b; }
+.p-skin, .p-hand { fill: var(--skin); }
+.p-hand { stroke: var(--skin-shade); stroke-width: 1.2; }
+.p-finger { fill: none; stroke: var(--skin-shade); stroke-width: 1.4; stroke-linecap: round; }
+.p-skin-shade { fill: var(--skin-shade); }
+.p-hair { fill: var(--hair); }
+.p-cap { fill: var(--cap); }
+.p-brim { fill: var(--cap-dark); }
+.p-cap-line { fill: none; stroke: var(--cap-dark); stroke-width: 2; stroke-linecap: round; }
+.p-cap-button { fill: var(--cap-dark); }
+.p-cardigan { fill: var(--cardigan); }
+.p-sleeve { fill: var(--cardigan-dark); }
+.p-cuff { fill: var(--shirt); }
+.p-shirt { fill: var(--shirt); }
+.p-collar { fill: var(--shirt); stroke: #d9d1c2; stroke-width: 1; }
+.p-button { fill: #f0d9a0; }
+.p-line { fill: none; stroke: var(--skin-shade); stroke-width: 2.2; stroke-linecap: round; }
+.p-line.soft { stroke-width: 1.6; opacity: 0.8; }
+.p-brow { fill: var(--hair); stroke: #d8d2c6; stroke-width: 1; transform-box: fill-box; transform-origin: center; transition: transform 0.25s; }
+.p-pupil { fill: #2b211c; transition: transform 0.25s; }
+.p-eyes-open { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
+@keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+.p-eyes-happy path { fill: none; stroke: #2b211c; stroke-width: 3; stroke-linecap: round; }
+.p-glasses circle, .p-glasses path { fill: none; stroke: var(--frame); stroke-width: 3; stroke-linecap: round; }
+.p-glasses circle { fill: rgba(255, 255, 255, 0.12); }
+.p-cheek { fill: var(--cheek); opacity: 0.35; transition: opacity 0.25s; }
+.p-nose { fill: #eba889; }
+.p-moustache { fill: var(--hair); stroke: #d8d2c6; stroke-width: 1.2; }
+.p-mouth { fill: none; stroke: var(--mouth); stroke-width: 3; stroke-linecap: round; }
+.p-mouth-open { fill: var(--mouth); }
+
+/* moods */
+.m-think, .m-happy, .m-sad, .m-angry, .p-eyes-happy, .p-anger { display: none; }
+.paco[data-mood="think"] .m-idle { display: none; }
+.paco[data-mood="think"] .m-think { display: inline; }
+.paco[data-mood="think"] .p-pupil { transform: translate(3px, -3px); }
+.paco[data-mood="think"] .p-brow-l { transform: translateY(-5px) rotate(-6deg); }
+.paco[data-mood="happy"] .m-idle,
+.paco[data-mood="happy"] .p-eyes-open { display: none; }
+.paco[data-mood="happy"] .m-happy,
+.paco[data-mood="happy"] .p-eyes-happy { display: inline; }
+.paco[data-mood="happy"] .p-cheek { opacity: 0.65; }
+.paco[data-mood="happy"] .p-brow { transform: translateY(-3px); }
+.paco[data-mood="sad"] .m-idle { display: none; }
+.paco[data-mood="sad"] .m-sad { display: inline; }
+.paco[data-mood="sad"] .p-brow-l { transform: rotate(-12deg) translateY(2px); }
+.paco[data-mood="sad"] .p-brow-r { transform: rotate(12deg) translateY(2px); }
+.paco[data-mood="sad"] .p-pupil { transform: translateY(2px); }
+.paco[data-mood="angry"] .m-idle { display: none; }
+.paco[data-mood="angry"] .m-angry,
+.paco[data-mood="angry"] .p-anger { display: inline; }
+.paco[data-mood="angry"] .p-brow-l { transform: rotate(20deg) translate(2px, 1px); }
+.paco[data-mood="angry"] .p-brow-r { transform: rotate(-20deg) translate(-2px, 1px); }
+.paco[data-mood="angry"] .p-pupil { transform: scaleY(0.7); transform-box: fill-box; transform-origin: center; }
+.paco[data-mood="angry"] .p-flush { opacity: 0.5; }
+.paco[data-mood="angry"] .p-brow { stroke: #9a9284; stroke-width: 2; }
+.paco[data-mood="angry"] .m-angry { stroke-width: 4; }
+.p-flush { fill: #e2483a; opacity: 0; transition: opacity 0.4s; }
+.p-anger path { fill: none; stroke: #d62f2f; stroke-width: 3.2; stroke-linecap: round; }
+.paco[data-mood="angry"] .p-anger { animation: throb 0.7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes throb { 50% { transform: scale(1.2); } }
+
+/* --- the table: green casino felt under a lamp, a padded rail --- */
+.table {
+  position: relative;
+  z-index: 2;                    /* between Paco's body and his hands */
+  border-radius: 120px / 90px;   /* rounded ends, like a card table */
+  padding: calc(var(--fig-w) * 34 / 180 + 4px) 56px 34px;
+  background:
+    radial-gradient(ellipse 55% 65% at 50% 45%, rgba(255, 246, 210, 0.38) 0%, rgba(255, 240, 190, 0.12) 45%, transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),   /* the grain of the felt */
+    radial-gradient(ellipse at 50% 50%, var(--felt) 0%, var(--felt-deep) 100%);
+  border: 22px solid var(--rail);
+  box-shadow:
+    inset 0 0 0 3px var(--gold),                 /* gold trim where felt meets rail */
+    inset 0 0 70px rgba(0, 0, 0, 0.6),
+    0 0 0 3px #c9a24e,                           /* brass ring round the leather */
+    0 0 0 6px #3b2212,
+    0 16px 0 #12080a,
+    0 30px 60px rgba(0, 0, 0, 0.6),
+    0 0 110px 20px rgba(255, 214, 150, 0.16);   /* the lamp's light spilling round the table */
+  display: grid;
+}
+/* the table, with the history standing right beside it */
+.table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--slate-w);
+  gap: 18px;
+  align-items: stretch;
+}
+/* stitching along the leather rail */
+.stitch {
+  position: absolute;
+  inset: -12px;
+  border-radius: 110px / 82px;
+  border: 1.5px dashed rgba(240, 215, 170, 0.35);
+  pointer-events: none;
+}
+/* the printed line and the house name on the felt */
+.table::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 100px / 74px;
+  border: 1.5px solid rgba(233, 196, 106, 0.45);
+  pointer-events: none;
+}
+.table::after {
+  content: "— Casino de la Plaza —";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  text-align: center;
+  font: italic 600 1.35rem var(--font-serif);
+  letter-spacing: 0.14em;
+  color: rgba(233, 196, 106, 0.32);
+  pointer-events: none;
+}
+.table-main { position: relative; z-index: 1; }
+.table-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.table-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.turn {
+  font: 400 1rem var(--font-display);
+  letter-spacing: 0.03em;
+  padding: 6px 16px 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+.turn.you { background: var(--sun); color: var(--sun-ink); box-shadow: 0 3px 0 var(--sun-deep); }
+.turn.bot { background: var(--coral); color: #2b0f05; box-shadow: 0 3px 0 var(--coral-deep); }
+.pile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 800 0.95rem var(--font-body);
+  cursor: default;
+}
+.pile:enabled { cursor: pointer; }
+.pile-stack { position: relative; display: block; height: 38px; }
+.pile-stack i {
+  position: absolute;
+  bottom: 0;
+  width: 20px;
+  height: 36px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, var(--coral-deep), var(--coral-deep) 3px, var(--coral) 3px, var(--coral) 6px);
+  border: 2px solid #8f3720;   /* the same back as the tiles in Paco's hand */
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
+}
+.pile-label { display: grid; line-height: 1.1; text-align: left; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
+.pile-label b { font: 400 1.3rem var(--font-display); font-variant-numeric: tabular-nums; }
+.pile.empty .pile-label { color: var(--ink-soft); }
+/* when you have to draw, the pile glows: tap it or use the button */
+.pile:enabled .pile-stack i:last-child { animation: pile-glow 1.2s ease-in-out infinite; }
+@keyframes pile-glow { 50% { box-shadow: 0 0 0 3px var(--sun), 0 0 16px rgba(255, 190, 11, 0.8); transform: translateY(-4px); } }
+
+/* the line of tiles between the two end boxes */
+.play-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+.end-box {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 104px;
+  padding: 10px 16px 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  margin-bottom: 34px;           /* level with the tiles, above the house name */
+}
+.end-box-label { font: italic 800 0.9rem var(--font-body); color: #e3eee7; white-space: nowrap; }
+.end-box-num { font: 400 2.3rem/1 var(--font-display); color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35); font-variant-numeric: tabular-nums; }
+.board {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 6px 2px 34px;         /* room for the house name under the tiles */
+}
+.board-msg {
+  margin: 0 auto;
+  max-width: 34ch;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff1d6;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.board-msg .tile-name { color: var(--sun); white-space: nowrap; }
+
+/* the snake: even rows run left to right, odd rows come back */
+.row { display: flex; align-items: center; gap: 3px; }
+.row.back { flex-direction: row-reverse; }
+.row.solo { justify-content: center; }  /* a short line sits in the middle of the table */
+
+.side-pick { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* --- beside the table: the history, and the rules under it --- */
+.side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  contain: size;                 /* as tall as the table, never taller */
+  margin-top: calc(var(--fig-w) * 34 / 180);
+}
+
+/* --- the slate: the history written in chalk --- */
+.slate {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  padding: 14px 12px 12px;
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.07), transparent 60%),
+    linear-gradient(160deg, var(--slate) 0%, var(--slate-deep) 100%);
+  border: 8px solid var(--wood-light);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.6), 0 6px 0 var(--wood-dark), 0 10px 16px rgba(0, 0, 0, 0.4);
+  transform: rotate(1.2deg);
+  color: var(--chalk);
+  font-family: var(--font-chalk);
+}
+/* a stub of chalk on the frame */
+.slate::after {
+  content: "";
+  position: absolute;
+  bottom: -12px;
+  right: 26px;
+  width: 30px;
+  height: 7px;
+  border-radius: 3px;
+  background: var(--chalk);
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+}
+.slate-title {
+  font: 700 1.7rem/1 var(--font-chalk);
+  text-align: center;
+  letter-spacing: 0.02em;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 2px dashed rgba(243, 241, 232, 0.45);
+}
+.slate-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 2px 0 0;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(243, 241, 232, 0.35) transparent;
+}
+.slate-list li {
+  display: block;
+  padding: 4px 6px;
+  font: 600 1.3rem/1.15 var(--font-chalk);
+  color: rgba(243, 241, 232, 0.72);
+  border-radius: 8px;
+}
+.slate-list li.latest {
+  color: var(--chalk);
+  background: rgba(255, 255, 255, 0.08);
+  animation: chalk-in 0.5s ease-out;
+}
+@keyframes chalk-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.slate .who { font-weight: 700; }
+.slate .you .who { color: var(--sun); }
+.slate .bot .who { color: var(--coral); }
+.slate-list:empty::before { content: "Aún no hay jugadas"; font: 600 1.2rem var(--font-chalk); color: rgba(243, 241, 232, 0.55); text-align: center; }
+
+
+/* --- tiles --- */
+.tile {
+  display: inline-flex;
+  width: var(--tile-w);
+  height: var(--tile-h);
+  background: linear-gradient(160deg, #ffffff 0%, var(--ivory) 50%, #f1e8d4 100%);
+  border-radius: 7px;
+  box-shadow: 0 3px 0 var(--ivory-edge), 0 6px 10px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+.tile.vertical { flex-direction: column; width: var(--tile-h); height: var(--tile-w); }
+.half {
+  flex: 1;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 6px;
+}
+.tile:not(.vertical) .half + .half { border-left: 2px solid var(--ivory-edge); }
+.tile.vertical .half + .half { border-top: 2px solid var(--ivory-edge); }
+.pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #555, var(--pip) 70%);
+  place-self: center;
+}
+
+.tile.open-end { box-shadow: 0 3px 0 var(--ivory-edge), 0 0 0 3px rgba(255, 190, 11, 0.6), 0 6px 10px rgba(0, 0, 0, 0.4); }
+.tile.target { cursor: pointer; animation: target 0.9s ease-in-out infinite; }
+@keyframes target {
+  50% { box-shadow: 0 3px 0 var(--ivory-edge), 0 0 0 5px var(--sun), 0 0 26px rgba(255, 190, 11, 0.9); transform: scale(1.06); }
+}
+.tile.fresh-you { animation: slam 0.45s cubic-bezier(0.3, 1.5, 0.6, 1); }
+.tile.fresh-bot {
+  animation: slam 0.45s cubic-bezier(0.3, 1.5, 0.6, 1);
+  box-shadow: 0 3px 0 var(--ivory-edge), 0 0 0 4px var(--coral), 0 6px 10px rgba(0, 0, 0, 0.4);
+}
+@keyframes slam { from { transform: translateY(-30px) scale(1.25) rotate(-8deg); opacity: 0; } }
+
+/* --- you --- */
+.me {
+  border-radius: 22px;
+  background: var(--panel);
+  border: 2px solid var(--panel-line);
+  padding: 14px 18px 0;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.me.active { border-color: var(--sun); box-shadow: 0 0 0 4px rgba(255, 190, 11, 0.2); }
+.me-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.me-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sun);
+  color: var(--sun-ink);
+  font: 400 1.5rem var(--font-display);
+  box-shadow: 0 4px 0 var(--sun-deep);
+  flex-shrink: 0;
+}
+.me-text { display: grid; flex: 1; min-width: 0; }
+.me-name { font: 400 1.3rem var(--font-display); color: var(--sun); line-height: 1.1; }
+.hint { color: var(--ink-soft); font-weight: 700; }
+.hint.prompt { color: var(--ink); }
+.hint.error { color: var(--coral); }
+.actions { display: flex; gap: 10px; }
+
+
+/* your tiles stand on a wooden rack */
+.rack {
+  margin: 14px -18px 0;
+  padding: 16px 18px 0;
+  background: linear-gradient(180deg, transparent 0%, transparent 72%, var(--wood-light) 72%, var(--wood) 86%, var(--wood-dark) 100%);
+  overflow-x: auto;
+}
+.hand { display: flex; gap: 10px; min-height: calc(var(--tile-w) + 22px); align-items: flex-end; padding-bottom: 14px; }
+.hand .tile { transition: transform 0.15s, opacity 0.15s, filter 0.15s; }
+.hand .tile.playable {
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--ivory-edge), 0 0 0 4px var(--sun), 0 8px 16px rgba(0, 0, 0, 0.45);
+}
+.hand .tile.playable:hover { transform: translateY(-10px) rotate(-2deg); }
+.hand .tile.selected { transform: translateY(-16px); box-shadow: 0 3px 0 var(--ivory-edge), 0 0 0 5px var(--sun), 0 0 24px rgba(255, 190, 11, 0.8); }
+.hand .tile.dim { opacity: 0.5; filter: saturate(0.4) brightness(0.85); }
+.hand .tile.drawn { animation: slam 0.45s cubic-bezier(0.3, 1.5, 0.6, 1); }
+
+/* --- one bar at the top: the scoreboard, and Paco's difficulty right next to it --- */
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #3a1322, #220b14);
+  border: 2px solid var(--gold);
+  box-shadow: 0 6px 0 #12060b;
+}
+.scoreboard, .difficulty { display: grid; gap: 4px; justify-items: start; }
+.difficulty, .hud-action { padding-left: 18px; border-left: 2px solid rgba(233, 196, 106, 0.35); }
+.hud-action .btn { white-space: nowrap; }
+.hud-title {
+  font: 400 0.8rem var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.score { display: grid; grid-template-columns: repeat(3, auto); gap: 16px; text-align: center; }
+.score > div { display: grid; }
+.score-num { font: 400 1.6rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.score-you .score-num { color: var(--sun); }
+.score-paco .score-num { color: var(--coral); }
+.score-label { color: var(--ink-soft); font-size: 0.72rem; font-weight: 800; }
+.difficulty select { padding: 6px 10px; }
+
+/* --- the rules: a big card under the history, opening a sheet of paper --- */
+.rules-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 96px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #3a1322, #1e0a12);
+  border: 2px solid var(--gold);
+  box-shadow: 0 6px 0 #12060b, 0 10px 18px rgba(0, 0, 0, 0.45);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transform: rotate(-1deg);
+  transition: transform 0.12s;
+}
+.rules-btn:hover { transform: rotate(0deg) translateY(-3px); }
+.rules-btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.rules-icon { width: 34px; height: 42px; flex-shrink: 0; }
+.rules-icon path { fill: #2a1018; stroke: var(--gold); stroke-width: 2; stroke-linejoin: round; }
+.rules-icon path:last-child { fill: none; stroke: #ffe7a8; }
+.rules-text { display: grid; gap: 2px; min-width: 0; }
+.rules-title { font: 900 1.6rem/1 "Playfair Display", "Georgia", serif; color: #f4d27c; letter-spacing: 0.03em; }
+.rules-sub { font: 700 0.8rem var(--font-body); color: var(--ink-soft); }
+
+dialog.sheet {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 34px 36px 30px;
+  text-align: left;
+  border: 2px solid var(--gold);
+  border-radius: 18px;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(233, 196, 106, 0.12), transparent 60%),
+    linear-gradient(180deg, #3a1322, #1a0910);
+  box-shadow: 0 10px 0 #12060b, 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+dialog.sheet[open] { animation: sheet-in 0.3s ease-out; }
+@keyframes sheet-in { from { transform: translateY(30px); opacity: 0; } }
+.sheet h2 {
+  font: 900 2rem/1.1 "Playfair Display", "Georgia", serif;
+  color: #f4d27c;
+  text-shadow: 0 2px 0 #6b4a12;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(233, 196, 106, 0.35);
+}
+.sheet section + section { margin-top: 16px; }
+.sheet h3 {
+  margin: 0 0 6px;
+  font: 400 1.1rem var(--font-display);
+  letter-spacing: 0.03em;
+  color: var(--coral);
+}
+.sheet ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.sheet li { font: 600 1.02rem/1.55 var(--font-body); color: #f1e6d6; }
+.sheet li::marker { color: var(--gold); }
+.sheet .btn { margin-top: 22px; }
+
+/* --- result --- */
+dialog {
+  border: 3px solid var(--panel-line);
+  border-radius: 26px;
+  padding: 26px 24px 28px;
+  width: min(440px, calc(100vw - 32px));
+  background: var(--panel);
+  color: var(--ink);
+  text-align: center;
+  box-shadow: 0 10px 0 #15173a;
+}
+dialog[open] { animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.6, 1); }
+dialog::backdrop { background: rgba(10, 11, 30, 0.72); }
+dialog h2 { font-size: 2.1rem; color: var(--sun); text-shadow: 0 3px 0 var(--sun-deep); margin: 8px 0 6px; }
+dialog p { color: var(--ink-soft); margin: 0 0 14px; }
+.portrait {
+  margin: 0 auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #ffd8a8 0%, #ff9f6e 55%, var(--coral-deep) 100%);
+  border: 4px solid var(--coral);
+  box-shadow: 0 6px 0 var(--coral-deep);
+}
+.portrait svg { width: 100%; height: 100%; display: block; }
+.result-hand { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+
+/* --- confetti when you beat Paco --- */
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+.confetti i {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  border-radius: 2px;
+  animation: fall linear forwards;
+}
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+/* --- narrower screens: the history always stays beside the table; the table shrinks --- */
+@media (max-width: 960px) {
+  :root { --fig-w: 190px; --slate-w: 180px; }
+  .table { padding-inline: 30px; border-width: 16px; border-radius: 70px / 56px; }
+  .stitch { inset: -9px; border-radius: 64px / 50px; }
+  .table::before { inset: 8px; border-radius: 60px / 48px; }
+  .table::after { font-size: 1rem; bottom: 14px; }
+  .slate-list li { font-size: 1.15rem; }
+}
+
+@media (max-width: 640px) {
+  :root { --tile-w: 48px; --tile-h: 24px; --fig-w: 130px; --slate-w: 104px; }
+  .half { padding: 3px; }
+  .pip { width: 4.5px; height: 4.5px; }
+  .top h1 { font-size: 1.9rem; }
+  .controls { width: 100%; }
+  /* Paco sits on the left, over the table; his words go on his right */
+  .opponent {
+    grid-template-columns: var(--fig-w) minmax(0, 1fr);
+    grid-template-areas: "figure info" "figure bubble";
+    gap: 8px 12px;
+    padding-right: 0;
+  }
+  .opponent-info { grid-area: info; justify-self: start; align-self: end; width: 70px; height: 70px; }
+  .opponent-tiles { font-size: 0.68rem; }
+  .figure { grid-area: figure; }
+  .bubble {
+    grid-area: bubble;
+    justify-self: stretch;
+    max-width: none;
+    margin-bottom: calc(var(--fig-w) * 0.62);
+    font-size: 0.9rem;
+    padding: 10px 12px;
+  }
+  .opponent-name { font-size: 1.15rem; }
+  .board { min-height: 170px; }
+  .table-row { gap: 8px; }
+  .table { padding-inline: 10px; border-width: 11px; border-radius: 34px / 30px; }
+  .stitch { inset: -6px; border-radius: 30px / 26px; }
+  .table::before { inset: 5px; border-radius: 28px / 24px; }
+  .table::after { display: none; }
+  .turn { font-size: 0.82rem; padding: 4px 10px 3px; }
+  .pile-stack { height: 30px; }
+  .pile-stack i { width: 16px; height: 28px; }
+  .pile { gap: 6px; }
+  .pile-label b { font-size: 1.05rem; }
+  .rules-btn { min-height: 0; flex-direction: column; gap: 4px; padding: 10px 4px; border-width: 4px; text-align: center; }
+  .rules-icon { width: 24px; height: 30px; }
+  .rules-title { font-size: 1.4rem; }
+  .rules-sub { font-size: 0.62rem; }
+  .tagline { font-size: 0.8rem; }
+  .hud { width: 100%; justify-content: space-between; gap: 8px; padding: 8px 10px; }
+  .difficulty, .hud-action { padding-left: 8px; }
+  .difficulty select { padding: 5px 6px; font-size: 0.85rem; }
+  .hud-action .btn { white-space: normal; font-size: 0.85rem; padding: 7px 10px 5px; line-height: 1.1; }
+  .hud-title { font-size: 0.62rem; letter-spacing: 0.03em; }
+  .score { gap: 8px; }
+  .score-num { font-size: 1.3rem; }
+  dialog.sheet { padding: 26px 22px 24px; }
+  .sheet h2 { font-size: 1.6rem; }
+  .sheet li { font-size: 0.95rem; }
+  .slate { padding: 10px 6px 8px; border-width: 6px; transform: none; }
+  .slate-title { font-size: 1.25rem; }
+  .slate-list li { padding: 3px 4px; font-size: 0.98rem; line-height: 1.1; }
+  /* small screens: the two boxes sit side by side above the tiles */
+  .play-row { grid-template-columns: 1fr 1fr; grid-template-areas: "left right" "board board"; gap: 8px; }
+  .end-box-left { grid-area: left; }
+  .end-box-right { grid-area: right; }
+  .play-row .board { grid-area: board; }
+  .end-box { min-width: 0; padding: 6px 4px 5px; margin-bottom: 0; }
+  .end-box-label { font-size: 0.7rem; }
+  .end-box-num { font-size: 1.6rem; }
+  .actions { width: 100%; }
+  .actions .btn { flex: 1; }
+  .hand { gap: 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
