@@ -15,20 +15,19 @@ from .player import Player
 from .turn_manager import TurnManager
 
 # --- presets ---
-PLAYER_OPTIONS = (2, 3, 4)
-MAX_PIP = 6          # double-six set, 28 tiles
-TILES_PER_PLAYER = 7  # TODO: revisit - with 4 players this deals all 28 tiles, boneyard is empty
+NUM_PLAYERS = 2       # project requirement: two-player game only
+MAX_PIP = 6           # double-six set, 28 tiles
+TILES_PER_PLAYER = 7  # 2 players x 7 = 14 dealt, 14 left in the boneyard
 
 
 def check_player_count(n_players):
-    if n_players not in PLAYER_OPTIONS:
-        raise ValueError(f"players must be one of {PLAYER_OPTIONS}, got {n_players}")
+    if n_players != NUM_PLAYERS:
+        raise ValueError(f"the game needs exactly {NUM_PLAYERS} players, got {n_players}")
 
 
-def new_game(n_players):
-    """Shuffle a double-six set and deal 7 tiles each. Returns (hands, boneyard, board)."""
-    check_player_count(n_players)
-    hands, boneyard = deal(shuffled_set(MAX_PIP), n_players, TILES_PER_PLAYER)
+def new_game():
+    """Shuffle a double-six set and deal 7 tiles to each of the 2 players. Returns (hands, boneyard, board)."""
+    hands, boneyard = deal(shuffled_set(MAX_PIP), NUM_PLAYERS, TILES_PER_PLAYER)
     board = []
     return hands, boneyard, board
 
@@ -53,7 +52,7 @@ def draw_tile(hand, boneyard):
 
 
 class Game:
-    """One round of classic domino. Players are referred to by seat number (0, 1, 2, ...).
+    """One round of classic two-player domino. Players are referred to by seat number (0 or 1).
 
     Each turn the current player does one of:
       play(seat, tile, side)  - if they have a legal move
@@ -65,20 +64,20 @@ class Game:
     def __init__(self, players):
         check_player_count(len(players))
         self.players = players
-        hands, self.boneyard, self.board = new_game(len(players))
+        hands, self.boneyard, self.board = new_game()
         for player, hand in zip(players, hands):
             player.hand = hand
 
         first_seat, self.opening_tile = rules.first_player(self.hands)
-        self.turns = TurnManager(len(players), first_seat)
+        self.turns = TurnManager(NUM_PLAYERS, first_seat)
         self.finished = False
         self.winner = None   # seat, or None if a blocked game ended in a tie
         self.end_reason = None  # "domino" (someone went out) or "blocked"
 
     @classmethod
-    def with_n_players(cls, n_players):
-        """Quick setup with placeholder players, handy for testing."""
-        return cls([Player(id=str(i), name=f"Player {i}") for i in range(n_players)])
+    def quick_start(cls):
+        """Quick setup with two placeholder players, handy for testing."""
+        return cls([Player(id=str(i), name=f"Player {i}") for i in range(NUM_PLAYERS)])
 
     # --- reading the state ---
     @property
