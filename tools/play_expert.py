@@ -72,7 +72,7 @@ def move_score(hand, tile, new_left, new_right):
 
 # --- how players pick a tile: styles learned from games ---------------------------------
 # Each style is a softmax over the legal moves, fitted on thousands of recorded decisions.
-#   montecarlo - the Monte Carlo bot (tools/play_montecarlo.py, branch BotDificil), 9,200 decisions; picks its move
+#   montecarlo - the Monte Carlo bot (tools/play_montecarlo.py), 9,200 decisions; picks its move
 #                60% of the time (a random guess: 39%). It hardly cares about dots; it loves
 #                leaving both ends on the same number and doubles (not once the boneyard is
 #                empty), chokes scarce numbers and leaves numbers it believes we don't hold.
