@@ -8,10 +8,9 @@ The rules engine does all the game logic; this file only runs the bot's turns,
 keeps a log of what happened and hides what you must not see (the bot's tiles).
 The bot moves only when the page asks (bot_turn), so the page can show it thinking.
 
-Levels: easy plays its heaviest tile, medium is the scoring bot (tools/play_scoring.py),
-hard is the Monte Carlo bot (tools/play_montecarlo.py) and superhard the expert bot
-(tools/play_expert.py), which works out the tiles you hold and learns your style; it keeps
-what it learned about you from one game to the next.
+Levels (the bots are in domino/bots/): easy plays its heaviest tile, medium is the scoring
+bot, hard is the Monte Carlo bot and superhard the expert bot, which works out the tiles you
+hold and learns your style; it keeps what it learned about you from one game to the next.
 
 Who opens: the first game follows the engine's rule (highest double). After that the
 web alternates: one game the bot opens, the next one you do, each with the highest
@@ -20,16 +19,13 @@ double in their hand (or their heaviest tile if they have no double).
 import json
 
 from domino.board import board_ends
-from domino.domino import pip_count
+from domino.bots import LEVELS, ExpertBot, GreedyBot, MonteCarloBot, ScoringBot
 from domino.game import Game
 from domino.hand import highest_double, highest_tile
 from domino.player import Player
-from tools.play_expert import ExpertBot
-from tools.play_montecarlo import MonteCarloBot
-from tools.play_scoring import ScoringBot
 
 YOU, BOT = 0, 1
-BOT_LEVELS = ("easy", "medium", "hard", "superhard")
+BOT_LEVELS = tuple(LEVELS)
 SUPER_THINK = 1.5     # seconds the expert bot thinks per move (Python in the browser is slower)
 your_style = {}       # what the expert has learned about how you play, kept between games
 
@@ -93,7 +89,7 @@ class Session:
             return self.strong.choose(self.game, moves)
         if self.level == "medium":
             return self.bot.choose(self.game, moves)
-        return max(moves, key=lambda m: pip_count(m[0]))  # easy: heaviest tile
+        return GreedyBot(BOT).choose(self.game, moves)  # easy: heaviest tile
 
     def run_bot(self):
         """Let the bot play until it's your turn again or the game is over."""

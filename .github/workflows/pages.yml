@@ -1,6 +1,6 @@
 # Publishes the web page on GitHub Pages every time main changes.
-# The page (web/) loads the Python engine (domino/, tools/) in the browser,
-# so all three folders are published together.
+# The page (web/) loads the Python engine (domino/, bots included) in the browser,
+# so both folders are published together. tools/ is for developers only and isn't published.
 # One-time setup on GitHub: Settings -> Pages -> Source: "GitHub Actions".
 name: Publish web
 
@@ -33,7 +33,7 @@ jobs:
       - name: Build the site
         run: |
           mkdir _site
-          cp -r web domino tools _site/
+          cp -r web domino _site/
           find _site -name "__pycache__" -prune -exec rm -rf {} +
           # the site's address opens the game directly
           echo '<meta http-equiv="refresh" content="0; url=web/">' > _site/index.html

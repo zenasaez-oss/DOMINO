@@ -6,7 +6,7 @@ game and the games are seeded, so a result can be reproduced exactly.
 Run from the project folder:
     python -m tools.arena montecarlo scoring -n 200
     python -m tools.arena scoring heavy -n 2000 --jobs 2
-Bots: heavy (tools/play.py), scoring (tools/play_scoring.py), montecarlo (tools/play_montecarlo.py)
+Bots (all in domino/bots/): heavy (greedy), scoring, montecarlo, expert
 """
 import argparse
 import math
@@ -14,31 +14,17 @@ import random
 from multiprocessing import Pool
 
 from domino.board import board_ends
-from domino.domino import pip_count
+from domino.bots import ExpertBot, GreedyBot, MonteCarloBot, ScoringBot
 from domino.game import Game
 from domino.player import Player
 
-
-class HeavyBot:
-    """The simple bot of tools/play.py: always plays its heaviest tile."""
-
-    def __init__(self, seat):
-        self.seat = seat
-
-    def choose(self, game, moves):
-        return max(moves, key=lambda m: pip_count(m[0]))
+BOTS = {"heavy": GreedyBot, "scoring": ScoringBot, "montecarlo": MonteCarloBot, "expert": ExpertBot}
 
 
 def make_bot(name, seat, **options):
-    if name == "heavy":
-        return HeavyBot(seat)
-    if name == "scoring":
-        from tools.play_scoring import ScoringBot
-        return ScoringBot(seat)
-    if name == "montecarlo":
-        from tools.play_montecarlo import MonteCarloBot
-        return MonteCarloBot(seat, **options)
-    raise SystemExit(f"unknown bot '{name}' (use heavy, scoring or montecarlo)")
+    if name not in BOTS:
+        raise SystemExit(f"unknown bot '{name}' (use {', '.join(BOTS)})")
+    return BOTS[name](seat, **options)
 
 
 def play_game(names, seed, options=None):

@@ -1,10 +1,11 @@
-"""Developer tool: play one game in the terminal against a simple bot.
+"""Developer tool: play one game in the terminal against the easy (greedy) bot.
 
-Not part of the game logic - the real game runs on the platform.
+Not part of the game logic - the real game runs on the platform. The bot itself lives in
+domino/bots/greedy.py.
 
 Run from the project folder:  python -m tools.play
 """
-from domino.domino import pip_count
+from domino.bots import GreedyBot
 from domino.game import Game
 from domino.player import Player
 
@@ -26,7 +27,7 @@ def bot_turn(game):
     while True:
         moves = game.legal_moves(BOT)
         if moves:
-            tile, side = max(moves, key=lambda m: pip_count(m[0]))
+            tile, side = GreedyBot(BOT).choose(game, moves)
             game.play(BOT, tile, side)
             print(f"Bot plays {tile_str(tile)} on the {'left' if side == 'L' else 'right'}")
             return
