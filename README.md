@@ -54,8 +54,10 @@ python -m unittest discover -s tests -t .         # run the tests
 
 Web
 ---
-`web/` is the page where a person plays a full game against a bot (easy = heaviest
-tile, medium = the scoring bot from `tools/play_scoring.py`). It is a static page:
+`web/` is the page where a person plays a full game against a bot: easy = heaviest
+tile, medium = the scoring bot (`tools/play_scoring.py`), hard = the Monte Carlo bot
+(`tools/play_montecarlo.py`), expert = the expert bot (`tools/play_expert.py`).
+It is a static page:
 [Pyodide](https://pyodide.org) runs the real `domino/` engine inside the browser,
 so there is no server and nothing to install. GitHub Pages publishes it on every
 push to `main` (`.github/workflows/pages.yml`).

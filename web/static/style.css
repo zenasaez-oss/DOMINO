@@ -248,7 +248,7 @@ select {
   transition: opacity 0.3s;
 }
 .opponent.active .figure::before { opacity: 1; }
-.paco {
+.char {
   position: relative;
   z-index: 1;                    /* behind the table */
   width: 100%;
@@ -360,9 +360,10 @@ select {
 /* Paco's drawing */
 .p-chair { fill: var(--chair); }
 .p-chair-slat { fill: #5e3a1b; }
-.p-skin, .p-hand { fill: var(--skin); }
-.p-hand { stroke: var(--skin-shade); stroke-width: 1.2; }
-.p-finger { fill: none; stroke: var(--skin-shade); stroke-width: 1.4; stroke-linecap: round; }
+.p-skin { fill: var(--skin); }
+.p-hand { fill: var(--hand); }
+.p-hand { stroke: var(--hand-line); stroke-width: 1.2; }
+.p-finger { fill: none; stroke: var(--hand-line); stroke-width: 1.4; stroke-linecap: round; }
 .p-skin-shade { fill: var(--skin-shade); }
 .p-hair { fill: var(--hair); }
 .p-cap { fill: var(--cap); }
@@ -370,8 +371,8 @@ select {
 .p-cap-line { fill: none; stroke: var(--cap-dark); stroke-width: 2; stroke-linecap: round; }
 .p-cap-button { fill: var(--cap-dark); }
 .p-cardigan { fill: var(--cardigan); }
-.p-sleeve { fill: var(--cardigan-dark); }
-.p-cuff { fill: var(--shirt); }
+.p-sleeve { fill: var(--sleeve); }
+.p-cuff { fill: var(--cuff); }
 .p-shirt { fill: var(--shirt); }
 .p-collar { fill: var(--shirt); stroke: #d9d1c2; stroke-width: 1; }
 .p-button { fill: #f0d9a0; }
@@ -392,34 +393,104 @@ select {
 
 /* moods */
 .m-think, .m-happy, .m-sad, .m-angry, .p-eyes-happy, .p-anger { display: none; }
-.paco[data-mood="think"] .m-idle { display: none; }
-.paco[data-mood="think"] .m-think { display: inline; }
-.paco[data-mood="think"] .p-pupil { transform: translate(3px, -3px); }
-.paco[data-mood="think"] .p-brow-l { transform: translateY(-5px) rotate(-6deg); }
-.paco[data-mood="happy"] .m-idle,
-.paco[data-mood="happy"] .p-eyes-open { display: none; }
-.paco[data-mood="happy"] .m-happy,
-.paco[data-mood="happy"] .p-eyes-happy { display: inline; }
-.paco[data-mood="happy"] .p-cheek { opacity: 0.65; }
-.paco[data-mood="happy"] .p-brow { transform: translateY(-3px); }
-.paco[data-mood="sad"] .m-idle { display: none; }
-.paco[data-mood="sad"] .m-sad { display: inline; }
-.paco[data-mood="sad"] .p-brow-l { transform: rotate(-12deg) translateY(2px); }
-.paco[data-mood="sad"] .p-brow-r { transform: rotate(12deg) translateY(2px); }
-.paco[data-mood="sad"] .p-pupil { transform: translateY(2px); }
-.paco[data-mood="angry"] .m-idle { display: none; }
-.paco[data-mood="angry"] .m-angry,
-.paco[data-mood="angry"] .p-anger { display: inline; }
-.paco[data-mood="angry"] .p-brow-l { transform: rotate(20deg) translate(2px, 1px); }
-.paco[data-mood="angry"] .p-brow-r { transform: rotate(-20deg) translate(-2px, 1px); }
-.paco[data-mood="angry"] .p-pupil { transform: scaleY(0.7); transform-box: fill-box; transform-origin: center; }
-.paco[data-mood="angry"] .p-flush { opacity: 0.5; }
-.paco[data-mood="angry"] .p-brow { stroke: #9a9284; stroke-width: 2; }
-.paco[data-mood="angry"] .m-angry { stroke-width: 4; }
+.char[data-mood="think"] .m-idle { display: none; }
+.char[data-mood="think"] .m-think { display: inline; }
+.char[data-mood="think"] .p-pupil { transform: translate(3px, -3px); }
+.char[data-mood="think"] .p-brow-l { transform: translateY(-5px) rotate(-6deg); }
+.char[data-mood="happy"] .m-idle,
+.char[data-mood="happy"] .p-eyes-open { display: none; }
+.char[data-mood="happy"] .m-happy,
+.char[data-mood="happy"] .p-eyes-happy { display: inline; }
+.char[data-mood="happy"] .p-cheek { opacity: 0.65; }
+.char[data-mood="happy"] .p-brow { transform: translateY(-3px); }
+.char[data-mood="sad"] .m-idle { display: none; }
+.char[data-mood="sad"] .m-sad { display: inline; }
+.char[data-mood="sad"] .p-brow-l { transform: rotate(-12deg) translateY(2px); }
+.char[data-mood="sad"] .p-brow-r { transform: rotate(12deg) translateY(2px); }
+.char[data-mood="sad"] .p-pupil { transform: translateY(2px); }
+.char[data-mood="angry"] .m-idle { display: none; }
+.char[data-mood="angry"] .m-angry,
+.char[data-mood="angry"] .p-anger { display: inline; }
+.char[data-mood="angry"] .p-brow-l { transform: rotate(20deg) translate(2px, 1px); }
+.char[data-mood="angry"] .p-brow-r { transform: rotate(-20deg) translate(-2px, 1px); }
+.char[data-mood="angry"] .p-pupil { transform: scaleY(0.7); transform-box: fill-box; transform-origin: center; }
+.char[data-mood="angry"] .p-flush { opacity: 0.5; }
+#char-hard[data-mood="angry"] .p-brow { stroke: #9a9284; stroke-width: 2; }
+.char[data-mood="angry"] .m-angry { stroke-width: 4; }
 .p-flush { fill: #e2483a; opacity: 0; transition: opacity 0.4s; }
 .p-anger path { fill: none; stroke: #d62f2f; stroke-width: 3.2; stroke-linecap: round; }
-.paco[data-mood="angry"] .p-anger { animation: throb 0.7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.char[data-mood="angry"] .p-anger { animation: throb 0.7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes throb { 50% { transform: scale(1.2); } }
+
+/* --- the four characters: colours of the sleeves and hands drawn in front of the table --- */
+.figure { --sleeve: var(--cardigan-dark); --cuff: var(--shirt); --hand: var(--skin); --hand-line: var(--skin-shade); }
+.figure[data-char="easy"] { --sleeve: #79b8d1; --cuff: #ffffff; }
+.figure[data-char="medium"] { --sleeve: #c8102e; --cuff: #ffffff; }
+.figure[data-char="superhard"] { --sleeve: #7f8c99; --cuff: #4f5d6a; --hand: #b8c4cf; --hand-line: #5c6b78; }
+
+/* Paquito, the baby */
+.q-chair { fill: #f4f1ea; stroke: #d8d0c0; stroke-width: 2; }
+.q-chair-edge { fill: #e0d8c8; }
+.q-onesie { fill: #9ad1e8; }
+.q-bib { fill: #ffffff; stroke: #e6dfd0; stroke-width: 1.5; }
+.q-duck { fill: #ffd166; }
+.q-beak { fill: #f4a261; }
+.q-curl { fill: none; stroke: #8a5a3a; stroke-width: 3.5; stroke-linecap: round; }
+.q-brow { fill: none; stroke: #c99a70; stroke-width: 2.5; stroke-linecap: round; }
+.q-sparkle { fill: #ffffff; }
+.q-tears path { fill: #7cc6f2; }
+
+/* Rosa, from Seville */
+.r-dress { fill: #c8102e; }
+.r-dots circle { fill: #ffffff; }
+.r-ruffle { fill: none; stroke: #ffffff; stroke-width: 3; stroke-linecap: round; }
+.r-hair { fill: #2b1a14; }
+.r-earring { fill: none; stroke: #d4af37; stroke-width: 3; }
+.r-flower circle { fill: #e63946; }
+.r-flower .r-flower-heart { fill: #9d0208; }
+.r-leaf { fill: #2d6a4f; }
+.r-brow { fill: none; stroke: #2b1a14; stroke-width: 2.6; stroke-linecap: round; }
+.r-lash { fill: none; stroke: #2b1a14; stroke-width: 1.6; stroke-linecap: round; }
+.r-mole { fill: #5a3a2a; }
+.r-lips { stroke: #c1121f; }
+.r-open { fill: #9d0208; }
+
+/* C06, the robot */
+.k-seat { fill: #2f3a46; }
+.k-metal { fill: #9aa7b4; stroke: #6c7a88; stroke-width: 2; }
+.k-bolt, .k-neck { fill: #6c7a88; }
+.k-panel { fill: #1b2430; stroke: #5c6b78; stroke-width: 1.5; }
+.k-label { fill: #5ce1e6; font: 700 10px ui-monospace, "Consolas", monospace; letter-spacing: 1px; }
+.k-led { fill: #5ce1e6; animation: led 1.4s steps(2) infinite; }
+.k-led2 { animation-delay: 0.45s; }
+.k-led3 { animation-delay: 0.9s; }
+@keyframes led { 50% { opacity: 0.25; } }
+.k-antenna-rod { stroke: #6c7a88; stroke-width: 3; }
+.k-antenna { fill: #ffbe0b; }
+.opponent.active .k-antenna { animation: led 0.6s steps(2) infinite; }
+.k-head { fill: #c3cdd6; stroke: #6c7a88; stroke-width: 2; }
+.k-visor, .k-grille { fill: #1b2430; }
+.k-brow { fill: #5ce1e6; stroke: none; }
+.k-eye { fill: #5ce1e6; }
+.k-happy path { stroke: #5ce1e6; }
+.k-mouth { stroke: #5ce1e6; }
+.k-flush { fill: #ff3b3b; }
+#char-superhard[data-mood="angry"] .k-eye,
+#char-superhard[data-mood="angry"] .k-brow { fill: #ff4d4d; }
+#char-superhard[data-mood="angry"] .k-mouth { stroke: #ff4d4d; }
+
+/* what each one has on the table */
+.d-teat { fill: #e9b872; }
+.d-ring { fill: #8ecae6; }
+.d-bottle { fill: rgba(255, 255, 255, 0.55); stroke: rgba(255, 255, 255, 0.85); stroke-width: 1; }
+.d-milk { fill: #fffaf0; }
+.d-marks { stroke: #7ab8d6; stroke-width: 1.2; }
+.d-fino { fill: #e9d38a; opacity: 0.9; }
+.d-spout { fill: #5c6b78; }
+.d-can { fill: #6c7a88; stroke: #46525e; stroke-width: 1.2; }
+.d-label { fill: #ffbe0b; }
+.d-label-text { fill: #2e1f00; font: 700 5.5px "Nunito", sans-serif; }
+.d-handle { fill: none; stroke: #46525e; stroke-width: 2.5; }
 
 /* --- the table: green casino felt under a lamp, a padded rail --- */
 .table {

@@ -89,6 +89,26 @@ class TestSession(unittest.TestCase):
             if doubles:
                 self.assertEqual(s.game.opening_tile, max(doubles))
 
+    def test_full_games_end_at_hard_levels(self):
+        think, session.SUPER_THINK = session.SUPER_THINK, 0.01   # keep the test quick
+        try:
+            for level in ("hard", "superhard"):
+                for _ in range(3):
+                    state = play_random_game(level)
+                    self.assertTrue(state["finished"])
+        finally:
+            session.SUPER_THINK = think
+
+    def test_superhard_remembers_your_style_between_games(self):
+        think, session.SUPER_THINK = session.SUPER_THINK, 0.01
+        try:
+            play_random_game("superhard")
+            first = session.current.strong
+            play_random_game("superhard")
+            self.assertIs(session.current.strong.style_evidence, first.style_evidence)
+        finally:
+            session.SUPER_THINK = think
+
     def test_unknown_level_is_an_error(self):
         self.assertIn("error", json.loads(session.new_game("impossible")))
 

@@ -8,6 +8,11 @@ The rules engine does all the game logic; this file only runs the bot's turns,
 keeps a log of what happened and hides what you must not see (the bot's tiles).
 The bot moves only when the page asks (bot_turn), so the page can show it thinking.
 
+Levels: easy plays its heaviest tile, medium is the scoring bot (tools/play_scoring.py),
+hard is the Monte Carlo bot (tools/play_montecarlo.py) and superhard the expert bot
+(tools/play_expert.py), which works out the tiles you hold and learns your style; it keeps
+what it learned about you from one game to the next.
+
 Who opens: the first game follows the engine's rule (highest double). After that the
 web alternates: one game the bot opens, the next one you do, each with the highest
 double in their hand (or their heaviest tile if they have no double).
@@ -19,10 +24,14 @@ from domino.domino import pip_count
 from domino.game import Game
 from domino.hand import highest_double, highest_tile
 from domino.player import Player
+from tools.play_expert import ExpertBot
+from tools.play_montecarlo import MonteCarloBot
 from tools.play_scoring import ScoringBot
 
 YOU, BOT = 0, 1
-BOT_LEVELS = ("easy", "medium")
+BOT_LEVELS = ("easy", "medium", "hard", "superhard")
+SUPER_THINK = 1.5     # seconds the expert bot thinks per move (Python in the browser is slower)
+your_style = {}       # what the expert has learned about how you play, kept between games
 
 
 class Session:
@@ -37,6 +46,15 @@ class Session:
         if opener is not None:
             self._set_opener(opener)
         self.bot = ScoringBot(BOT)
+        if level == "hard":
+            self.strong = MonteCarloBot(BOT)
+        elif level == "superhard":
+            # it reads the opening by the engine's rule only in the first game
+            self.strong = ExpertBot(BOT, time_limit=SUPER_THINK, global_opening=opener is None,
+                                    memory=your_style.setdefault("evidence", None))
+            your_style["evidence"] = self.strong.style_evidence
+        else:
+            self.strong = None
         self.log = []                 # what happened, newest last
         self.last_bot_turn = []       # what the bot did in its last turn
         self._start_your_turn()       # if the bot opens, the page calls bot_turn()
@@ -71,6 +89,8 @@ class Session:
 
     # --- bot's turn ---
     def bot_choice(self, moves):
+        if self.strong is not None:
+            return self.strong.choose(self.game, moves)
         if self.level == "medium":
             return self.bot.choose(self.game, moves)
         return max(moves, key=lambda m: pip_count(m[0]))  # easy: heaviest tile

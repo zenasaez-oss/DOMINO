@@ -1,7 +1,7 @@
 // Draws the game and sends your moves to it.
 // All the rules live in the Python engine (domino/), which runs in the page through
 // Pyodide; web/session.py is the bridge. This file only displays, and gives the bot
-// a face: Paco thinks for a moment before each move and comments on it.
+// a face: the character you play against thinks for a moment before each move and comments on it.
 
 const $ = (id) => document.getElementById(id);
 
@@ -10,7 +10,8 @@ const PY_FILES = [
   "domino/__init__.py", "domino/board.py", "domino/deck.py", "domino/domino.py",
   "domino/game.py", "domino/hand.py", "domino/player.py", "domino/rules.py",
   "domino/turn_manager.py",
-  "tools/__init__.py", "tools/play.py", "tools/play_scoring.py",
+  "tools/__init__.py", "tools/play.py", "tools/play_scoring.py", "tools/play_montecarlo.py",
+  "tools/play_expert.py",
   "web/__init__.py", "web/session.py",
 ];
 // the page lives in web/, the packages next to it (a page can set its own PY_ROOT)
@@ -25,32 +26,99 @@ const PIPS = {
 };
 const SIDE_NAME = { L: "izquierda", R: "derecha" };
 const YOU = 0, BOT = 1;
-const THINK_MS = [900, 1700];   // how long Paco thinks before a move
+const THINK_MS = [900, 1700];   // how long the character seems to think before a move
 
-// What Paco says. {t} is a tile, {n} a number of tiles.
-const SAYS = {
-  youOpen: ["Venga, chaval, sales tú con el {t}.", "Te toca abrir con el {t}. Sin prisa, que no hay prisa."],
-  play: ["¡Ahí va el {t}!", "El {t}, y a ver qué haces.", "Pongo el {t}. Te toca, chaval.",
-         "El {t}, que lo tenía guardado.", "{t}. Cincuenta años jugando en la plaza…"],
-  open: ["Salgo yo. ¡El {t}!", "Abro con el {t}, como manda la tradición."],
-  lastTile: ["El {t}… y me queda una. ¡Ojo!"],
-  drawPlay: ["He tenido que robar {n}… pero ahí va el {t}."],
-  drawPass: ["Robo {n} y nada de nada. Paso."],
-  pass: ["Paso. No llevo nada.", "Me has cerrado… paso."],
-  youDraw: ["Je, je… a robar, chaval.", "¿No llevas? Al pozo."],
-  botWins: ["¡Dominó! Así se juega en mi barrio.", "¡Dominó! Otra vez será, chaval.", "¡Dominó! ¡Salud!"],
-  botWinsBlocked: ["Cerrada, y gano por puntos. ¡Je, je!"],
-  youWin: ["¡Bah! Has tenido suerte. Esta no cuenta, ¿eh?", "¡Recórcholis! Otra, que me pico."],
-  youWinBlocked: ["¿Cerrada y me ganas por puntos? ¡Hmpf! Revancha."],
-  tie: ["Tablas. ¿Echamos otra?"],
+// Who you play against: one character per level, each with their own way of talking.
+// In what they say, {t} is a tile and {n} a number of tiles.
+const CHARACTERS = {
+  easy: {
+    name: "Paquito",
+    think: "Mmm",
+    says: {
+      youOpen: ["¡Tú pimero! Con el {t}."],
+      play: ["¡Ta! El {t}.", "¡Pon! {t}.", "¡Mía! El {t}, ji, ji."],
+      open: ["¡Yo! ¡Yo! El {t}."],
+      lastTile: ["¡El {t}! ¡Me queda una!"],
+      drawPlay: ["Cojo {n}… ¡y el {t}!"],
+      drawPass: ["Cojo {n}… ¡no hay! Paso."],
+      pass: ["No teno… paso."],
+      youDraw: ["¡Ji, ji! ¡A cogé!", "¡Al montón!"],
+      botWins: ["¡Gané! ¡Gané! ¡Bibi!", "¡Dominó! ¡Aplausos!"],
+      botWinsBlocked: ["¡Gané por puntitos!"],
+      youWin: ["¡Buaaa! ¡Otra!", "¡No vale! ¡Buaaa!"],
+      youWinBlocked: ["¡Buaaa! Otra…"],
+      tie: ["¿Empate? ¡Otra!"],
+    },
+  },
+  medium: {
+    name: "Rosa",
+    think: "Déjame pensar, mi arma",
+    says: {
+      youOpen: ["Venga, mi arma, sales tú con el {t}.", "Te toca abrir con el {t}, cielo."],
+      play: ["¡Olé! Ahí va el {t}.", "El {t}, y que corra el aire.", "Toma el {t}, cariño."],
+      open: ["Salgo yo con el {t}, con permiso."],
+      lastTile: ["El {t}… ¡y me queda una, mi alma!"],
+      drawPlay: ["Me ha tocado robar {n}… pero ahí va el {t}."],
+      drawPass: ["Robo {n} y nada, hija. Paso."],
+      pass: ["Paso, que no llevo ná."],
+      youDraw: ["Ay, a robar, mi arma.", "¿No llevas? Al pozo, cielo."],
+      botWins: ["¡Dominó! ¡Olé y olé!", "¡Dominó! Esto es arte, chiquillo."],
+      botWinsBlocked: ["Cerrada, y gano por puntos. ¡Olé!"],
+      youWin: ["¡Ay, madre! Me has ganado.", "¡Qué arte tienes! Otra, que me pico."],
+      youWinBlocked: ["Cerrada y me ganas por puntos… ¡qué apuro!"],
+      tie: ["Tablas, mi arma. ¿Otra?"],
+    },
+  },
+  hard: {
+    name: "Paco",
+    think: "Mmm, déjame pensar",
+    says: {
+      youOpen: ["Venga, chaval, sales tú con el {t}.", "Te toca abrir con el {t}. Sin prisa, que no hay prisa."],
+      play: ["¡Ahí va el {t}!", "El {t}, y a ver qué haces.", "Pongo el {t}. Te toca, chaval.",
+             "El {t}, que lo tenía guardado.", "{t}. Cincuenta años jugando en la plaza…"],
+      open: ["Salgo yo. ¡El {t}!", "Abro con el {t}, como manda la tradición."],
+      lastTile: ["El {t}… y me queda una. ¡Ojo!"],
+      drawPlay: ["He tenido que robar {n}… pero ahí va el {t}."],
+      drawPass: ["Robo {n} y nada de nada. Paso."],
+      pass: ["Paso. No llevo nada.", "Me has cerrado… paso."],
+      youDraw: ["Je, je… a robar, chaval.", "¿No llevas? Al pozo."],
+      botWins: ["¡Dominó! Así se juega en mi barrio.", "¡Dominó! Otra vez será, chaval.", "¡Dominó! ¡Salud!"],
+      botWinsBlocked: ["Cerrada, y gano por puntos. ¡Je, je!"],
+      youWin: ["¡Bah! Has tenido suerte. Esta no cuenta, ¿eh?", "¡Recórcholis! Otra, que me pico."],
+      youWinBlocked: ["¿Cerrada y me ganas por puntos? ¡Hmpf! Revancha."],
+      tie: ["Tablas. ¿Echamos otra?"],
+    },
+  },
+  superhard: {
+    name: "C06",
+    think: "CALCULANDO",
+    thinkMs: [200, 500],   // it really thinks for 1.5 s on top of this (web/session.py)
+    says: {
+      youOpen: ["INICIO DE PARTIDA. SALES TÚ CON EL {t}."],
+      play: ["JUGADA ÓPTIMA: {t}.", "EJECUTANDO {t}.", "{t} COLOCADO. PROBABILIDAD DE VICTORIA: EN AUMENTO."],
+      open: ["APERTURA: {t}."],
+      lastTile: ["{t}. FICHAS RESTANTES: 1."],
+      drawPlay: ["ROBO {n}. RECALCULANDO… {t}."],
+      drawPass: ["ROBO {n}. SIN JUGADAS VÁLIDAS. PASO."],
+      pass: ["SIN JUGADAS VÁLIDAS. PASO."],
+      youDraw: ["NO TIENES ESE NÚMERO. ANOTADO.", "ROBAS. TOMO NOTA."],
+      botWins: ["DOMINÓ. VICTORIA CALCULADA.", "DOMINÓ. ERA PREVISIBLE."],
+      botWinsBlocked: ["PARTIDA CERRADA. GANO POR PUNTOS."],
+      youWin: ["ERROR 404: VICTORIA NO ENCONTRADA.", "IMPOSIBLE… REINICIANDO ORGULLO."],
+      youWinBlocked: ["CERRADA. PIERDO POR PUNTOS. ANALIZANDO…"],
+      tie: ["TABLAS. SOLICITO REVANCHA."],
+    },
+  },
 };
+let level = "hard";
+let character = CHARACTERS[level];
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 let state = null;
 let selected = null;          // tile picked in your hand that fits on both ends
 let boardBefore = new Set();  // tiles on the board before the last update
 let handBefore = new Set();   // tiles in your hand before the last update
-let thinking = false;         // Paco is about to move
+let thinking = false;         // the character is about to move
 let botTimer = null;
 let moodTimer = null;
 let counted = false;          // this game's result is already in the scoreboard
@@ -82,7 +150,25 @@ function call(fn) {
   return data;
 }
 
-function newGame(level) {
+// The face and drink of the character being played, and their name everywhere
+function face() {
+  return $(`char-${level}`);
+}
+
+function seatCharacter(chosen) {
+  level = chosen;
+  character = CHARACTERS[level];
+  $("figure").dataset.char = level;
+  // (SVG elements have no .hidden property, so set the attribute itself)
+  for (const svg of document.querySelectorAll(".char")) svg.toggleAttribute("hidden", svg.id !== `char-${level}`);
+  for (const drink of document.querySelectorAll(".posavasos")) drink.toggleAttribute("hidden", drink.dataset.for !== level);
+  $("bot-name").textContent = character.name;
+  $("score-bot-name").textContent = character.name;
+  face().dataset.mood = "idle";
+}
+
+function newGame(chosen) {
+  seatCharacter(chosen);
   clearTimeout(botTimer);
   thinking = false;
   boardBefore = new Set();
@@ -92,7 +178,7 @@ function newGame(level) {
   $("seat-bot").classList.remove("cheers");
   const data = call(() => session.new_game(level));
   if (!data) return;
-  if (data.current_seat === YOU) say(pick(SAYS.youOpen), { t: data.opening_tile }, "idle");
+  if (data.current_seat === YOU) say(pick(character.says.youOpen), { t: data.opening_tile }, "idle");
   render(data);
   maybeBotTurn();
 }
@@ -109,13 +195,14 @@ function yourMove(fn, reaction) {
 
 const playTile = ([a, b], side) => yourMove(() => session.play(a, b, side));
 
-// Paco thinks for a moment, then moves
+// The character thinks for a moment, then moves
 function maybeBotTurn() {
   if (state.finished || state.current_seat !== BOT) return;
   thinking = true;
   sayThinking();
   render(state);
-  const wait = THINK_MS[0] + Math.random() * (THINK_MS[1] - THINK_MS[0]);
+  const [low, high] = character.thinkMs || THINK_MS;
+  const wait = low + Math.random() * (high - low);
   botTimer = setTimeout(() => {
     thinking = false;
     const opening = state.board.length === 0;
@@ -127,11 +214,11 @@ function maybeBotTurn() {
   }, wait);
 }
 
-// --- Paco's face and words ---
+// --- the character's face and words ---
 function setMood(mood, backToIdle = false) {
-  $("paco").dataset.mood = mood;
+  face().dataset.mood = mood;
   clearTimeout(moodTimer);
-  if (backToIdle) moodTimer = setTimeout(() => { $("paco").dataset.mood = "idle"; }, 2200);
+  if (backToIdle) moodTimer = setTimeout(() => { face().dataset.mood = "idle"; }, 2200);
 }
 
 function say(template, { t, n } = {}, mood = "idle", backToIdle = false) {
@@ -156,7 +243,7 @@ function say(template, { t, n } = {}, mood = "idle", backToIdle = false) {
 
 function sayThinking() {
   const bubble = $("bubble");
-  bubble.replaceChildren("Mmm, déjame pensar");
+  bubble.replaceChildren(character.think);
   const dots = document.createElement("span");
   dots.className = "dots";
   dots.innerHTML = "<i></i><i></i><i></i>";
@@ -169,23 +256,23 @@ function reactToBotTurn(opening) {
   const draws = turn.filter((e) => e.action === "draw").length;
   const play = turn.find((e) => e.action === "play");
   const left = state.players[BOT].tiles_left;
-  if (play && draws) say(pick(SAYS.drawPlay), { t: play.tile, n: draws }, "idle");
-  else if (play && opening) say(pick(SAYS.open), { t: play.tile }, "happy", true);
-  else if (play && left === 1) say(pick(SAYS.lastTile), { t: play.tile }, "happy", true);
-  else if (play) say(pick(SAYS.play), { t: play.tile }, "happy", true);
-  else if (draws) say(pick(SAYS.drawPass), { n: draws }, "sad", true);
-  else say(pick(SAYS.pass), {}, "sad", true);
+  if (play && draws) say(pick(character.says.drawPlay), { t: play.tile, n: draws }, "idle");
+  else if (play && opening) say(pick(character.says.open), { t: play.tile }, "happy", true);
+  else if (play && left === 1) say(pick(character.says.lastTile), { t: play.tile }, "happy", true);
+  else if (play) say(pick(character.says.play), { t: play.tile }, "happy", true);
+  else if (draws) say(pick(character.says.drawPass), { n: draws }, "sad", true);
+  else say(pick(character.says.pass), {}, "sad", true);
 }
 
 function reactToEnd() {
   const blocked = state.end_reason === "blocked";
   if (state.winner === BOT) {
-    say(pick(blocked ? SAYS.botWinsBlocked : SAYS.botWins), {}, "happy");
+    say(pick(blocked ? character.says.botWinsBlocked : character.says.botWins), {}, "happy");
     $("seat-bot").classList.add("cheers");  // he raises his glass
   } else if (state.winner === YOU) {
-    say(pick(blocked ? SAYS.youWinBlocked : SAYS.youWin), {}, "angry");
+    say(pick(blocked ? character.says.youWinBlocked : character.says.youWin), {}, "angry");
     confetti();
-  } else say(pick(SAYS.tie), {}, "idle");
+  } else say(pick(character.says.tie), {}, "idle");
   renderResult();
 }
 
@@ -270,7 +357,7 @@ function renderBoard() {
       name.textContent = tileText(state.opening_tile);
       msg.append(name, ".");
     } else {
-      msg.textContent = "Mesa limpia. Sale Paco.";
+      msg.textContent = `Mesa limpia. Sale ${character.name}.`;
     }
     board.appendChild(msg);
     boardBefore = new Set();
@@ -384,7 +471,7 @@ function renderPile(canDraw) {
 function renderStatus() {
   const mine = yourTurn();
   const turn = $("turn");
-  turn.textContent = state.finished ? "Fin de la partida" : thinking ? "Paco está pensando…" : mine ? "Mi turno" : "Turno de Paco";
+  turn.textContent = state.finished ? "Fin de la partida" : thinking ? `${character.name} está pensando…` : mine ? "Mi turno" : `Turno de ${character.name}`;
   turn.className = "turn" + (state.finished ? "" : mine ? " you" : " bot");
   $("seat-you").classList.toggle("active", mine);
   $("seat-bot").classList.toggle("active", !state.finished && !mine);
@@ -403,7 +490,7 @@ function renderStatus() {
   const hint = $("hint");
   hint.className = "hint" + (mine ? " prompt" : "");
   if (state.finished) hint.textContent = "Partida terminada.";
-  else if (!mine) hint.textContent = "Espera a que juegue Paco…";
+  else if (!mine) hint.textContent = `Espera a que juegue ${character.name}…`;
   else if (selected) hint.textContent = `¿Dónde pones el ${tileText(selected)}? Toca un extremo que brille.`;
   else if (state.my_moves.length) hint.textContent = "Toca una ficha iluminada para jugarla.";
   else if (state.can_draw) hint.textContent = "No llevas nada que case: roba del pozo.";
@@ -432,7 +519,7 @@ function moveSentence(e, count) {
 }
 
 function renderLog() {
-  // Paco's draws in a row go on one line: you only see how many, not which
+  // the character's draws in a row go on one line: you only see how many, not which
   const lines = [];
   for (const e of state.log) {
     const last = lines.at(-1);
@@ -445,7 +532,7 @@ function renderLog() {
     li.className = e.who + (i === 0 ? " latest" : "");
     const who = document.createElement("span");
     who.className = "who";
-    who.textContent = e.who === "you" ? "Tú" : "Paco";
+    who.textContent = e.who === "you" ? "Tú" : character.name;
     li.append(who, ` ${moveSentence(e, count)}`);
     return li;
   }));
@@ -467,24 +554,26 @@ function renderResult() {
     text = "La partida se ha cerrado y los dos sumáis lo mismo.";
   } else if (state.winner === YOU) {
     title = "¡Has ganado!";
-    text = blocked ? "La partida se cerró y sumabas menos puntos." : "Te has quedado sin fichas antes que Paco.";
+    text = blocked ? "La partida se cerró y sumabas menos puntos." : `Te has quedado sin fichas antes que ${character.name}.`;
     text += ` Te llevas ${state.score} puntos.`;
   } else {
-    title = "Gana Paco";
-    text = blocked ? "La partida se cerró y Paco sumaba menos puntos." : "Paco se ha quedado sin fichas antes que tú.";
+    title = `Gana ${character.name}`;
+    text = blocked ? `La partida se cerró y ${character.name} sumaba menos puntos.`
+                   : `${character.name} se ha quedado sin fichas antes que tú.`;
     text += ` Se lleva ${state.score} puntos.`;
   }
-  // a close-up of Paco, with the face he's making right now
-  const svg = $("paco").cloneNode(true);
+  // a close-up of the character, with the face they're making right now
+  const svg = face().cloneNode(true);
   svg.removeAttribute("id");
-  svg.setAttribute("viewBox", "22 36 156 156");
+  svg.removeAttribute("hidden");
+  svg.setAttribute("viewBox", svg.dataset.face);
   const portrait = document.createElement("div");
   portrait.className = "portrait";
   portrait.appendChild(svg);
   $("result-face").replaceChildren(portrait);
 
   $("result-title").textContent = title;
-  $("result-text").textContent = text + (state.bot_hand.length ? " A Paco le quedaban:" : "");
+  $("result-text").textContent = text + (state.bot_hand.length ? ` A ${character.name} le quedaban:` : "");
   const botHand = $("result-bot");
   botHand.innerHTML = "";
   state.bot_hand.forEach((t) => botHand.appendChild(tileEl(t, { vertical: true })));
@@ -518,7 +607,7 @@ function drawCellar() {
     }
   }
 
-  // the arch behind Paco, with a rack of bottles lying in the dark
+  // the arch behind the character, with a rack of bottles lying in the dark
   parts.push(`<path d="M600 640 L600 270 A200 200 0 0 1 1000 270 L1000 640 Z" fill="#140906"/>`);
   parts.push(`<path d="M600 640 L600 270 A200 200 0 0 1 1000 270 L1000 640" fill="none" stroke="#5e3624" stroke-width="22"/>`);
   for (let a = 0; a <= 180; a += 15) {          // the arch's bricks
@@ -646,10 +735,12 @@ $("new-game").addEventListener("submit", (e) => {
   e.preventDefault();
   newGame($("level").value);
 });
-$("draw-btn").onclick = () => yourMove(() => session.draw(), SAYS.youDraw);
-$("pile").onclick = () => yourMove(() => session.draw(), SAYS.youDraw);
+$("draw-btn").onclick = () => yourMove(() => session.draw(), character.says.youDraw);
+$("pile").onclick = () => yourMove(() => session.draw(), character.says.youDraw);
 $("pass-btn").onclick = () => yourMove(() => session.pass_turn());
 $("again-btn").onclick = () => newGame($("level").value);
+// choosing a character starts a game against them
+$("level").addEventListener("change", () => { if (session) newGame($("level").value); });
 // the rules open as a sheet; tap outside it or "Entendido" to close
 $("rules-btn").onclick = () => $("rules-sheet").showModal();
 $("rules-close").onclick = () => $("rules-sheet").close();
