@@ -221,6 +221,8 @@ details.panel ul { margin: 12px 0 0; padding-left: 1.1em; display: grid; gap: 8p
 .opponent .plate { justify-self: start; align-self: center; margin-bottom: 40px; padding: 10px 22px; }
 .plate .n { display: block; }
 .juan { width: clamp(190px, 24vw, 250px); height: auto; display: block; overflow: visible; }
+.juan[hidden] { display: none; }
+.chars { display: block; line-height: 0; }
 .juan .mood { display: none; }
 .juan[data-mood="neutral"] .m-n, .juan[data-mood="grumpy"] .m-g, .juan[data-mood="happy"] .m-h { display: inline; }
 .juan .smoke circle { opacity: 0; transform-box: fill-box; transform-origin: center; animation: puff 3.8s ease-out infinite; }
@@ -265,8 +267,9 @@ details.panel ul { margin: 12px 0 0; padding-left: 1.1em; display: grid; gap: 8p
     <div class="options">
       <label for="botSel">Rival</label>
       <select id="botSel">
-        <option value="scoring">Bot de puntuación (medio)</option>
-        <option value="heavy">Bot básico (ficha más pesada)</option>
+        <option value="heavy">Bot Fácil (Lucas)</option>
+        <option value="scoring" selected>Bot Medio (Ana Juana)</option>
+        <option value="montecarlo">Bot Difícil (Juan)</option>
       </select>
       <label class="chk" for="fast"><input type="checkbox" id="fast"> Bot rápido</label>
       <button class="btn ghost" id="newGame" data-fk="new" type="button">Nueva partida</button>
@@ -280,10 +283,189 @@ details.panel ul { margin: 12px 0 0; padding-left: 1.1em; display: grid; gap: 8p
 
       <div class="opponent">
         <div class="plate" id="botPlate">
-          <div><strong id="oppName">Juan</strong><span class="n" id="oppType"></span><span class="n" id="oppCount"></span></div>
+          <div><strong id="oppName">Ana Juana</strong><span class="n" id="oppType"></span><span class="n" id="oppCount"></span></div>
           <span class="flag" id="botFlag" hidden>Su turno</span>
         </div>
-        <svg class="juan" id="juan" data-mood="neutral" aria-hidden="true" viewBox="0 0 260 230" xmlns="http://www.w3.org/2000/svg">
+        <div class="chars"><svg class="juan" id="lucas" data-mood="neutral" aria-hidden="true" hidden viewBox="0 0 260 230" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="lucasStripe" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 10 H20" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="5"/>
+    </pattern>
+    <linearGradient id="lucasShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgb(0,0,0)" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="rgb(0,0,0)" stop-opacity="0.30"/>
+    </linearGradient>
+    <radialGradient id="lucasFace" cx="0.5" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="rgb(254,224,198)"/>
+      <stop offset="1" stop-color="rgb(238,186,152)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- body -->
+  <path d="M46 232 C46 196 72 176 102 170 L158 170 C188 176 214 196 214 232 Z" fill="rgb(150,196,236)"/>
+  <path d="M46 232 C46 196 72 176 102 170 L158 170 C188 176 214 196 214 232 Z" fill="url(#lucasStripe)"/>
+  <path d="M46 232 C46 196 72 176 102 170 L158 170 C188 176 214 196 214 232 Z" fill="url(#lucasShade)"/>
+  <!-- cuello -->
+  <path d="M112 148 V174 Q130 184 148 174 V148 Z" fill="rgb(238,190,156)"/>
+  <!-- babero -->
+  <path d="M92 172 Q130 210 168 172 L176 216 Q130 240 84 216 Z" fill="rgb(252,250,244)" stroke="rgb(200,204,218)" stroke-width="2"/>
+  <text x="130" y="212" text-anchor="middle" font-family="Barlow, Segoe UI, Arial, sans-serif" font-size="13" font-weight="800" fill="rgb(70,110,176)">Lucas</text>
+  <circle cx="130" cy="193" r="3.2" fill="rgb(250,208,70)"/>
+
+  <!-- orejas -->
+  <ellipse cx="78" cy="108" rx="9" ry="12" fill="rgb(236,184,150)"/>
+  <ellipse cx="182" cy="108" rx="9" ry="12" fill="rgb(236,184,150)"/>
+  <!-- cabeza grande -->
+  <ellipse cx="130" cy="100" rx="56" ry="52" fill="url(#lucasFace)"/>
+  <!-- pelito: un solo rizo -->
+  <path d="M130 50 C118 32 142 24 148 36 C152 46 138 46 138 40" fill="none" stroke="rgb(138,92,54)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M110 58 Q118 50 126 54 M146 54 Q154 50 160 58" fill="none" stroke="rgb(170,124,84)" stroke-width="3" stroke-linecap="round"/>
+  <!-- mofletes -->
+  <ellipse cx="96" cy="124" rx="13" ry="9" fill="rgba(240,116,120,0.42)"/>
+  <ellipse cx="164" cy="124" rx="13" ry="9" fill="rgba(240,116,120,0.42)"/>
+  <!-- nariz -->
+  <ellipse cx="130" cy="113" rx="5.5" ry="4.2" fill="rgb(234,172,142)"/>
+
+  <!-- cejas -->
+  <g class="mood m-n"><path d="M99 84 Q110 80 121 84 M139 84 Q150 80 161 84" fill="none" stroke="rgb(190,148,108)" stroke-width="3" stroke-linecap="round"/></g>
+  <g class="mood m-h"><path d="M99 81 Q110 76 121 81 M139 81 Q150 76 161 81" fill="none" stroke="rgb(190,148,108)" stroke-width="3" stroke-linecap="round"/></g>
+  <g class="mood m-g"><path d="M98 80 L121 87 M162 80 L139 87" fill="none" stroke="rgb(190,148,108)" stroke-width="3.4" stroke-linecap="round"/></g>
+  <!-- ojos -->
+  <g class="mood m-n">
+    <ellipse cx="110" cy="101" rx="9.5" ry="10.5" fill="rgb(252,252,252)"/>
+    <ellipse cx="150" cy="101" rx="9.5" ry="10.5" fill="rgb(252,252,252)"/>
+    <circle cx="111" cy="102" r="6.4" fill="rgb(54,36,28)"/>
+    <circle cx="149" cy="102" r="6.4" fill="rgb(54,36,28)"/>
+    <circle cx="113.5" cy="99" r="2.4" fill="rgb(255,255,255)"/>
+    <circle cx="151.5" cy="99" r="2.4" fill="rgb(255,255,255)"/>
+  </g>
+  <g class="mood m-h">
+    <path d="M100 105 Q110 94 120 105 M140 105 Q150 94 160 105" fill="none" stroke="rgb(54,36,28)" stroke-width="3.4" stroke-linecap="round"/>
+  </g>
+  <g class="mood m-g">
+    <path d="M101 94 L119 102 L101 110 M159 94 L141 102 L159 110" fill="none" stroke="rgb(54,36,28)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M103 114 q-4 8 0 12 q4 -4 0 -12 Z M157 114 q4 8 0 12 q-4 -4 0 -12 Z" fill="rgb(128,196,244)"/>
+  </g>
+
+  <!-- boca -->
+  <g class="mood m-n">
+    <ellipse cx="130" cy="134" rx="18" ry="10" fill="rgb(246,148,184)" stroke="rgb(212,100,140)" stroke-width="1.6"/>
+    <circle cx="124" cy="134" r="2" fill="rgb(212,100,140)"/><circle cx="136" cy="134" r="2" fill="rgb(212,100,140)"/>
+    <circle cx="130" cy="134" r="6.5" fill="none" stroke="rgb(255,236,244)" stroke-width="3"/>
+  </g>
+  <g class="mood m-h">
+    <path d="M110 128 Q130 156 150 128 Q130 134 110 128 Z" fill="rgb(150,52,60)" stroke="rgb(150,52,60)" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M121 140 Q130 134 139 140 Q130 150 121 140 Z" fill="rgb(236,110,120)"/>
+  </g>
+  <g class="mood m-g">
+    <path d="M113 142 Q130 122 147 142 Q130 156 113 142 Z" fill="rgb(150,52,60)" stroke="rgb(150,52,60)" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M122 146 Q130 140 138 146 Q130 152 122 146 Z" fill="rgb(236,110,120)"/>
+  </g>
+</svg>
+
+<svg class="juan" id="ana" data-mood="neutral" aria-hidden="true" hidden viewBox="0 0 260 230" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="anaKnit" width="20" height="26" patternUnits="userSpaceOnUse">
+      <path d="M10 -2 C3 4 17 9 10 15 C3 21 17 26 10 32" fill="none" stroke="rgba(90,30,44,0.28)" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M0 0 V26 M20 0 V26" fill="none" stroke="rgba(90,30,44,0.14)" stroke-width="1.6"/>
+    </pattern>
+    <linearGradient id="anaShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgb(0,0,0)" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="rgb(0,0,0)" stop-opacity="0.36"/>
+    </linearGradient>
+    <radialGradient id="anaFace" cx="0.5" cy="0.38" r="0.7">
+      <stop offset="0" stop-color="rgb(250,216,184)"/>
+      <stop offset="1" stop-color="rgb(224,172,138)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- rebeca de punto -->
+  <path d="M22 232 C22 190 50 166 96 158 L164 158 C210 166 238 190 238 232 Z" fill="rgb(176,98,112)"/>
+  <path d="M22 232 C22 190 50 166 96 158 L164 158 C210 166 238 190 238 232 Z" fill="url(#anaKnit)"/>
+  <path d="M22 232 C22 190 50 166 96 158 L164 158 C210 166 238 190 238 232 Z" fill="url(#anaShade)"/>
+  <!-- blusa de flores -->
+  <path d="M100 160 Q130 224 160 160 Q148 150 130 150 Q112 150 100 160 Z" fill="rgb(247,239,224)"/>
+  <g fill="rgb(206,84,96)"><circle cx="122" cy="186" r="3.4"/><circle cx="138" cy="196" r="3.4"/><circle cx="128" cy="208" r="3.4"/></g>
+  <g fill="rgb(96,140,196)"><circle cx="136" cy="178" r="2.6"/><circle cx="120" cy="198" r="2.6"/><circle cx="140" cy="214" r="2.6"/></g>
+  <path d="M100 160 Q120 204 124 232 M160 160 Q140 204 136 232" fill="none" stroke="rgba(90,30,44,0.4)" stroke-width="2"/>
+  <g fill="rgb(238,214,170)" stroke="rgba(90,60,30,0.5)" stroke-width="1"><circle cx="150" cy="200" r="3.6"/><circle cx="153" cy="220" r="3.6"/></g>
+
+  <!-- cuello y cuello de la blusa -->
+  <path d="M106 138 V164 Q130 178 154 164 V138 Z" fill="rgb(236,188,154)"/>
+  <ellipse cx="130" cy="150" rx="26" ry="8" fill="rgba(120,66,44,0.28)"/>
+  <path d="M104 158 Q108 178 128 172 L122 154 Z" fill="rgb(250,244,232)" stroke="rgba(120,90,70,0.35)" stroke-width="1.2"/>
+  <path d="M156 158 Q152 178 132 172 L138 154 Z" fill="rgb(250,244,232)" stroke="rgba(120,90,70,0.35)" stroke-width="1.2"/>
+  <!-- collar de perlas -->
+  <g fill="rgb(252,250,244)" stroke="rgba(150,140,130,0.7)" stroke-width="0.8">
+    <circle cx="104" cy="152" r="2.7"/><circle cx="110.5" cy="159" r="2.7"/><circle cx="117" cy="164" r="2.7"/><circle cx="123.5" cy="167" r="2.7"/>
+    <circle cx="130" cy="168" r="2.7"/><circle cx="136.5" cy="167" r="2.7"/><circle cx="143" cy="164" r="2.7"/><circle cx="149.5" cy="159" r="2.7"/><circle cx="156" cy="152" r="2.7"/>
+  </g>
+
+  <!-- moño -->
+  <circle cx="130" cy="34" r="23" fill="rgb(214,212,222)"/>
+  <path d="M112 30 Q130 18 148 30 M113 41 Q130 31 147 41 M118 50 Q130 44 142 50" fill="none" stroke="rgb(170,166,182)" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M110 52 Q130 60 150 52" fill="none" stroke="rgb(214,96,128)" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- orejas con pendientes -->
+  <ellipse cx="83" cy="106" rx="9" ry="14" fill="rgb(228,176,142)"/>
+  <ellipse cx="177" cy="106" rx="9" ry="14" fill="rgb(228,176,142)"/>
+  <circle cx="83" cy="123" r="4" fill="rgb(252,250,244)" stroke="rgb(190,150,70)" stroke-width="1.4"/>
+  <circle cx="177" cy="123" r="4" fill="rgb(252,250,244)" stroke="rgb(190,150,70)" stroke-width="1.4"/>
+
+  <!-- pelo gris por detrás -->
+  <path d="M84 96 C70 52 100 38 130 38 C160 38 190 52 176 96 C174 72 158 60 130 60 C102 60 86 72 84 96 Z" fill="rgb(206,204,214)"/>
+
+  <!-- cara -->
+  <path d="M86 94 C86 62 106 50 130 50 C154 50 174 62 174 94 C174 128 156 150 130 150 C104 150 86 128 86 94 Z" fill="url(#anaFace)"/>
+  <!-- flequillo y ondas -->
+  <path d="M86 92 C88 62 108 50 130 50 C152 50 172 62 174 92 C164 72 150 64 130 64 C110 64 96 72 86 92 Z" fill="rgb(214,212,222)"/>
+  <path d="M96 70 Q110 60 124 62 M136 62 Q150 60 164 70" fill="none" stroke="rgb(172,168,184)" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="104" cy="121" rx="12" ry="8" fill="rgba(232,106,108,0.38)"/>
+  <ellipse cx="156" cy="121" rx="12" ry="8" fill="rgba(232,106,108,0.38)"/>
+  <!-- arruguitas de sonreír -->
+  <path d="M98 128 q-4 6 -2 12 M162 128 q4 6 2 12 M92 100 q-3 3 -3 7 M168 100 q3 3 3 7" fill="none" stroke="rgba(140,84,60,0.38)" stroke-width="1.3" stroke-linecap="round"/>
+  <!-- nariz -->
+  <ellipse cx="130" cy="113" rx="9" ry="11" fill="rgb(234,182,148)"/>
+  <ellipse cx="126" cy="121" rx="2.2" ry="1.5" fill="rgba(120,64,48,0.5)"/>
+  <ellipse cx="134" cy="121" rx="2.2" ry="1.5" fill="rgba(120,64,48,0.5)"/>
+
+  <!-- ojos -->
+  <g class="mood m-n m-g">
+    <ellipse cx="112" cy="102" rx="6.4" ry="4.4" fill="rgb(252,252,252)"/>
+    <ellipse cx="148" cy="102" rx="6.4" ry="4.4" fill="rgb(252,252,252)"/>
+    <circle cx="113" cy="102" r="3" fill="rgb(78,48,30)"/>
+    <circle cx="149" cy="102" r="3" fill="rgb(78,48,30)"/>
+    <circle cx="114" cy="101" r="0.9" fill="rgb(255,255,255)"/>
+    <circle cx="150" cy="101" r="0.9" fill="rgb(255,255,255)"/>
+  </g>
+  <g class="mood m-h">
+    <path d="M105 104 Q112 96 119 104 M141 104 Q148 96 155 104" fill="none" stroke="rgb(64,40,28)" stroke-width="2.8" stroke-linecap="round"/>
+  </g>
+  <!-- gafas -->
+  <g fill="rgba(255,255,255,0.12)" stroke="rgb(190,150,70)" stroke-width="2.4">
+    <circle cx="112" cy="102" r="13.5"/><circle cx="148" cy="102" r="13.5"/>
+  </g>
+  <path d="M125.5 100 Q130 96 134.5 100 M98.5 100 L86 97 M161.5 100 L174 97" fill="none" stroke="rgb(190,150,70)" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M104 94 Q108 91 113 92" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+  <!-- cejas -->
+  <g class="mood m-n"><path d="M100 84 Q112 78 124 84 M136 84 Q148 78 160 84" fill="none" stroke="rgb(184,178,190)" stroke-width="4" stroke-linecap="round"/></g>
+  <g class="mood m-h"><path d="M100 81 Q112 74 124 81 M136 81 Q148 74 160 81" fill="none" stroke="rgb(184,178,190)" stroke-width="4" stroke-linecap="round"/></g>
+  <g class="mood m-g"><path d="M100 86 Q112 84 124 77 M136 77 Q148 84 160 86" fill="none" stroke="rgb(184,178,190)" stroke-width="4" stroke-linecap="round"/></g>
+
+  <!-- boca -->
+  <g class="mood m-n"><path d="M117 136 Q130 147 143 136" fill="none" stroke="rgb(176,72,76)" stroke-width="3" stroke-linecap="round"/></g>
+  <g class="mood m-h"><path d="M112 132 Q130 156 148 132 Q130 139 112 132 Z" fill="rgb(150,52,56)" stroke="rgb(150,52,56)" stroke-width="1.6" stroke-linejoin="round"/></g>
+  <g class="mood m-g"><path d="M120 144 Q130 137 140 144" fill="none" stroke="rgb(176,72,76)" stroke-width="3" stroke-linecap="round"/></g>
+
+  <!-- broche -->
+  <circle cx="90" cy="193" r="19.5" fill="rgb(0,0,0)" fill-opacity="0.26"/>
+  <circle cx="90" cy="191" r="19" fill="rgb(217,164,65)"/>
+  <circle cx="90" cy="191" r="15" fill="rgb(247,236,222)"/>
+  <circle cx="90" cy="191" r="6.5" fill="rgb(214,84,104)"/>
+  <path d="M90 191 Q84 184 90 180 Q96 184 90 191 Z M90 191 Q98 189 100 194 Q96 198 90 191 Z M90 191 Q82 196 86 200 Q92 198 90 191 Z" fill="rgb(236,128,142)"/>
+</svg>
+
+<svg class="juan" id="juan" data-mood="neutral" aria-hidden="true" viewBox="0 0 260 230" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <pattern id="knit" width="20" height="26" patternUnits="userSpaceOnUse">
       <path d="M10 -2 C3 4 17 9 10 15 C3 21 17 26 10 32" fill="none" stroke="rgba(60,48,34,0.30)" stroke-width="2.4" stroke-linecap="round"/>
@@ -390,7 +572,7 @@ details.panel ul { margin: 12px 0 0; padding-left: 1.1em; display: grid; gap: 8p
   <circle cx="90" cy="191" r="15.5" fill="rgb(250,246,236)"/>
   <text x="90" y="195" text-anchor="middle" font-family="Barlow, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" fill="rgb(34,24,12)">Juan</text>
 </svg>
-
+</div>
         <span aria-hidden="true"></span>
       </div>
 
@@ -458,7 +640,7 @@ details.panel ul { margin: 12px 0 0; padding-left: 1.1em; display: grid; gap: 8p
           <div><dt>Perdidas</dt><dd id="sL">0</dd></div>
           <div><dt>Empates</dt><dd id="sT">0</dd></div>
         </dl>
-        <p class="points">Puntos: tú <strong id="sYou">0</strong> y Juan <strong id="sBot">0</strong></p>
+        <p class="points">Puntos: tú <strong id="sYou">0</strong> y <span id="sBotName">Ana Juana</span> <strong id="sBot">0</strong></p>
       </section>
 
       <section class="panel" aria-labelledby="logH">
@@ -475,7 +657,7 @@ details.panel ul { margin: 12px 0 0; padding-left: 1.1em; display: grid; gap: 8p
           <li>Gana quien juega su última ficha y suma los puntos que quedan en la mano del rival.</li>
           <li>Si los dos pasan seguidos, la partida queda bloqueada. Gana quien tenga menos puntos en la mano y, si empatan, nadie gana.</li>
           <li>Las jugadas ilegales se rechazan y no cambian la partida.</li>
-          <li>Juan, el bot, solo ve su mano, la mesa y cuántas fichas tienes tú.</li>
+          <li>Tu rival (Lucas, Ana Juana o Juan, según el bot que elijas) solo ve su mano, la mesa y cuántas fichas tienes tú.</li>
         </ul>
         <p class="help">Cómo jugar: pulsa una ficha resaltada. Si cabe por los dos extremos, pulsa el extremo donde la quieres. Con teclado usa Tab y Enter, las flechas para moverte entre tus fichas y Escape para cancelar.</p>
       </details>
@@ -706,6 +888,161 @@ class HeavyBot {
   }
 }
 /* ENGINE:END */
+/* MCBOT:START — port de tools/play_montecarlo.py. Solo usa lo que ve cualquier jugador (view). Sin DOM. */
+const MC_TILES = fullSet();                                   // mismo orden que domino.full_set()
+const MC_INDEX = new Map(MC_TILES.map((t, i) => [key(t), i]));
+const MC_HAS = [0, 1, 2, 3, 4, 5, 6].map(n => MC_TILES.reduce((m, t, i) => (hasNum(t, n) ? m | (1 << i) : m), 0));
+const MC_SOLVE_LIMIT = 4000;
+const MC_BIG = { tooBig: true };
+
+function mcMaskPips(mask) {
+  let total = 0;
+  while (mask) {
+    const low = mask & -mask;
+    total += pipCount(MC_TILES[31 - Math.clz32(low)]);
+    mask ^= low;
+  }
+  return total;
+}
+
+/* Valor exacto para quien mueve: +1 gana, 0 empata, -1 pierde (pozo vacío, manos conocidas). */
+function mcSolve(mine, theirs, left, right, passes, memo) {
+  const k = mine + ',' + theirs + ',' + left + ',' + right + ',' + passes;
+  const hit = memo.get(k);
+  if (hit !== undefined) return hit;
+  if (memo.size > MC_SOLVE_LIMIT) throw MC_BIG;
+  const playable = mine & (MC_HAS[left] | MC_HAS[right]);
+  let best;
+  if (!playable) {
+    if (passes >= 1) {
+      const a = mcMaskPips(mine), b = mcMaskPips(theirs);
+      best = a < b ? 1 : (a > b ? -1 : 0);
+    } else best = -mcSolve(theirs, mine, left, right, passes + 1, memo);
+  } else {
+    best = -2;
+    let rest = playable;
+    while (rest && best < 1) {
+      const low = rest & -rest;
+      rest ^= low;
+      const t = MC_TILES[31 - Math.clz32(low)];
+      const newMine = mine ^ low;
+      if (!newMine) { best = 1; break; }
+      const opts = [];
+      if (hasNum(t, left)) opts.push([t[0] === left ? t[1] : t[0], right]);
+      if (hasNum(t, right) && left !== right) opts.push([left, t[0] === right ? t[1] : t[0]]);
+      for (const [nl, nr] of opts) {
+        const v = -mcSolve(theirs, newMine, nl, nr, 0, memo);
+        if (v > best) best = v;
+        if (best === 1) break;
+      }
+    }
+  }
+  memo.set(k, best);
+  return best;
+}
+
+function mcLegal(hand, left, right) {
+  const out = [];
+  for (const t of hand) {
+    if (hasNum(t, left)) out.push([t, t[0] === left ? t[1] : t[0], right]);
+    if (hasNum(t, right) && left !== right) out.push([t, left, t[0] === right ? t[1] : t[0]]);
+  }
+  return out;
+}
+/* Jugada rápida de los "mundos imaginados": fichas pesadas, dobles y conservar opciones. */
+function mcPick(hand, moves, rng) {
+  let best = null, bestScore = -1e9;
+  for (const m of moves) {
+    const [t, nl, nr] = m;
+    let s = t[0] + t[1] + (t[0] === t[1] ? 3 : 0);
+    for (const o of hand) if (o !== t && (hasNum(o, nl) || hasNum(o, nr))) s += 2;
+    s += rng() * 0.5;
+    if (s > bestScore) { best = m; bestScore = s; }
+  }
+  return best;
+}
+/* Juega la partida hasta el final. Devuelve +1 / 0 / -1 (con un pequeño extra por el margen de puntos). */
+function mcRollout(me, opp, yard, left, right, turn, passes, rng, margin) {
+  const hands = [me, opp];
+  yard = yard.slice();
+  for (;;) {
+    const hand = hands[turn];
+    let moves = mcLegal(hand, left, right);
+    while (!moves.length && yard.length) { hand.push(yard.pop()); moves = mcLegal(hand, left, right); }
+    if (!moves.length) {
+      if (++passes >= 2) {
+        const a = handPips(me), b = handPips(opp);
+        return a < b ? 1 + margin * (b - a) : (a > b ? -1 - margin * (a - b) : 0);
+      }
+      turn ^= 1;
+      continue;
+    }
+    passes = 0;
+    const [t, nl, nr] = mcPick(hand, moves, rng);
+    hand.splice(hand.indexOf(t), 1);
+    left = nl; right = nr;
+    if (!hand.length) return turn === 0 ? 1 + margin * handPips(opp) : -1 - margin * handPips(me);
+    turn ^= 1;
+  }
+}
+
+class MonteCarloBot {
+  /* samples: manos posibles del rival por decisión. maxTime: tope de segundos por decisión. */
+  constructor(seat, opts = {}) {
+    this.seat = seat;
+    this.rng = opts.rng || Math.random;
+    this.samples = opts.samples || 300;
+    this.maxTime = opts.maxTime || 1.2;
+    this.margin = 0.02;
+    this.opponentLacks = new Set();   // números que el rival no tiene ahora mismo
+  }
+  /* Lo que revela el turno del rival: si roba o pasa, no tenía ficha con los extremos abiertos. */
+  observe(ends, draws, played) {
+    if (!ends) return;
+    const kept = draws - (played ? 1 : 0);
+    if (kept > 0) this.opponentLacks = new Set(ends);
+    else if (draws > 0 || !played) for (const e of ends) this.opponentLacks.add(e);
+  }
+  choose(view, moves) {
+    if (moves.length === 1) return moves[0];
+    const hand = view.myHand, board = view.board, oppN = view.oppTilesLeft;
+    const seen = new Set(hand.map(key).concat(board.map(t => key(normalize(t)))));
+    const unseen = MC_TILES.filter(t => !seen.has(key(t)));
+    const lacks = this.opponentLacks;
+    let fits = unseen.filter(t => !lacks.has(t[0]) && !lacks.has(t[1]));
+    if (fits.length < oppN) fits = unseen;               // conocimiento incoherente: lo descartamos
+    const fitSet = new Set(fits.map(key));
+    const forcedYard = unseen.filter(t => !fitSet.has(key(t)));
+    const [left, right] = view.ends;
+    const scores = new Array(moves.length).fill(0);
+    const start = performance.now();
+    let done = 0, tooBig = false;
+    for (;;) {
+      const sh = fits.slice();
+      for (let i = sh.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [sh[i], sh[j]] = [sh[j], sh[i]]; }
+      const oppHand = sh.slice(0, oppN);
+      const pool = forcedYard.concat(sh.slice(oppN));
+      for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      moves.forEach(([tile, side], i) => {
+        const [nl, nr] = endsAfter(board, tile, side);
+        const rest = hand.filter(t => !same(t, tile));
+        if (!rest.length) { scores[i] += 1; return; }
+        if (!pool.length && !tooBig) {                     // información perfecta: se resuelve exacto
+          const mine = rest.reduce((m, t) => m | (1 << MC_INDEX.get(key(t))), 0);
+          const theirs = oppHand.reduce((m, t) => m | (1 << MC_INDEX.get(key(t))), 0);
+          try { scores[i] += -mcSolve(theirs, mine, nl, nr, 0, new Map()); return; } catch (e) { if (e !== MC_BIG) throw e; tooBig = true; }
+        }
+        scores[i] += mcRollout(rest.map(t => t), oppHand.map(t => t), pool, nl, nr, 1, 0, this.rng, this.margin);
+      });
+      done++;
+      if (done >= this.samples || (done >= 20 && (performance.now() - start) / 1000 >= this.maxTime)) break;
+    }
+    let best = 0;
+    for (let i = 1; i < moves.length; i++) if (scores[i] > scores[best]) best = i;
+    return moves[best];
+  }
+}
+/* MCBOT:END */
 
 /* ---------- Interfaz ---------- */
 const $ = id => document.getElementById(id);
@@ -715,7 +1052,13 @@ const nm = t => `${t[0]}-${t[1]}`;
 const spoken = t => (isDouble(t) ? `doble ${t[0]}` : `${t[0]} y ${t[1]}`);
 const sideTxt = s => (s === LEFT ? 'a la izquierda' : 'a la derecha');
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const BOT_NAMES = { scoring: 'Bot de puntuación', heavy: 'Bot básico' };
+const BOTS = {
+  heavy:      { name: 'Lucas',     label: 'Bot Fácil',   desc: 'juega la ficha más pesada', figure: 'lucas' },
+  scoring:    { name: 'Ana Juana', label: 'Bot Medio',   desc: 'puntúa cada jugada',        figure: 'ana' },
+  montecarlo: { name: 'Juan',      label: 'Bot Difícil', desc: 'Monte Carlo',               figure: 'juan' },
+};
+const BOT_NAMES = { montecarlo: 'Bot Difícil', scoring: 'Bot Medio', heavy: 'Bot Fácil' };
+const oppName = () => BOTS[botKind].name;
 
 const PIPS = {
   0: [], 1: [[2, 2]], 2: [[1, 1], [3, 3]], 3: [[1, 1], [2, 2], [3, 3]],
@@ -736,7 +1079,11 @@ function saveSession() { try { localStorage.setItem('domino-session-v1', JSON.st
 
 function sr(text) { const el = $('sr'); el.textContent = ''; setTimeout(() => { el.textContent = text; }, 30); }
 function addLog(who, text) { log.unshift({ who, text }); if (log.length > 80) log.pop(); }
-function makeBot(kind) { return kind === 'heavy' ? new HeavyBot() : new ScoringBot(1); }
+function makeBot(kind) {
+  if (kind === 'heavy') return new HeavyBot();
+  if (kind === 'montecarlo') return new MonteCarloBot(1);
+  return new ScoringBot(1);
+}
 
 function newGame() {
   epoch++;
@@ -746,9 +1093,9 @@ function newGame() {
   busy = false; selected = null; lastPlay = null; scored = false; flash = ''; log = [];
   $('result').hidden = true;
   $('botNote').textContent = '';
-  const opener = game.openingSeat === 0 ? 'Abres tú' : 'Abre Juan';
+  const opener = game.openingSeat === 0 ? 'Abres tú' : `Abre ${oppName()}`;
   const why = isDouble(game.openingTile) ? 'es el doble más alto' : 'nadie tiene dobles y es la ficha más alta';
-  addLog('sys', `Nueva partida contra Juan (${BOT_NAMES[botKind].toLowerCase()}). ${opener} con el ${nm(game.openingTile)}: ${why}.`);
+  addLog('sys', `Nueva partida contra ${oppName()} (${BOT_NAMES[botKind].toLowerCase()}). ${opener} con el ${nm(game.openingTile)}: ${why}.`);
   beginTurn();
 }
 
@@ -828,7 +1175,7 @@ async function botTurn() {
       const from = botRect();
       game.play(1, tile, side);
       lastPlay = { side: opening ? RIGHT : side, landing: true };
-      const text = opening ? `Juan abre con el ${nm(tile)}.` : `Juan pone el ${nm(tile)} ${sideTxt(side)}.`;
+      const text = opening ? `${oppName()} abre con el ${nm(tile)}.` : `${oppName()} pone el ${nm(tile)} ${sideTxt(side)}.`;
       addLog('bot', text); sr(text); render();
       await flyTile(from, null);
       if (my !== epoch) return;
@@ -837,11 +1184,11 @@ async function botTurn() {
     }
     if (game.canDraw(1)) {
       game.draw(1);
-      addLog('bot', 'Juan roba una ficha.'); sr('Juan roba una ficha.'); render();
+      addLog('bot', `${oppName()} roba una ficha.`); sr(`${oppName()} roba una ficha.`); render();
       continue;
     }
     game.passTurn(1);
-    addLog('bot', 'Juan pasa.'); sr('Juan pasa.'); render();
+    addLog('bot', `${oppName()} pasa.`); sr(`${oppName()} pasa.`); render();
     break;
   }
   if (my !== epoch) return;
@@ -851,7 +1198,7 @@ async function botTurn() {
 
 function humanMessage() {
   if (game.finished) return '';
-  if (game.currentSeat !== 0 || busy) return 'Turno de Juan…';
+  if (game.currentSeat !== 0 || busy) return `Turno de ${oppName()}…`;
   if (!game.board.length) return `Abres tú. Las reglas obligan a empezar con el ${nm(game.openingTile)}.`;
   if (game.legalMoves(0).length) {
     return selected ? `Elige el extremo donde poner el ${nm(selected.split(',').map(Number))}.` : 'Tu turno. Elige una ficha resaltada.';
@@ -949,7 +1296,7 @@ function render() {
 
   // Estado y jugadores
   $('turn').classList.toggle('mine', myTurn);
-  $('turnTxt').textContent = game.finished ? 'Partida terminada' : (myTurn ? 'Tu turno' : 'Turno de Juan');
+  $('turnTxt').textContent = game.finished ? 'Partida terminada' : (myTurn ? 'Tu turno' : `Turno de ${oppName()}`);
   const pool = game.boneyard.length;
   $('pool').textContent = pool === 0 ? 'Pozo vacío' : `Pozo: ${plural(pool, 'ficha', 'fichas')}`;
   $('stack').innerHTML = '<span class="tile v back"></span>'.repeat(Math.min(3, pool));
@@ -961,9 +1308,16 @@ function render() {
   $('botFlag').hidden = !botTurnNow; $('youFlag').hidden = !myTurn;
   $('botPlate').classList.toggle('active', botTurnNow);
   $('youPlate').classList.toggle('active', myTurn);
-  // Juan reacciona al final de la partida; mientras piensa, el humo sube más rápido
-  $('juan').setAttribute('data-mood', game.finished ? (game.winner === 1 ? 'happy' : game.winner === 0 ? 'grumpy' : 'neutral') : 'neutral');
-  $('juan').classList.toggle('thinking', botTurnNow);
+  // El rival reacciona al final de la partida; Juan, mientras piensa, echa el humo más rápido
+  const mood = game.finished ? (game.winner === 1 ? 'happy' : game.winner === 0 ? 'grumpy' : 'neutral') : 'neutral';
+  for (const k of Object.keys(BOTS)) {
+    const fig = $(BOTS[k].figure);
+    fig.toggleAttribute('hidden', k !== botKind);
+    fig.setAttribute('data-mood', mood);
+    fig.classList.toggle('thinking', k === botKind && botTurnNow);
+  }
+  $('oppName').textContent = oppName();
+  $('sBotName').textContent = oppName();
 
   // Tablero
   const fresh = lastPlay ? (lastPlay.side === LEFT ? 0 : game.board.length - 1) : -1;
@@ -1032,11 +1386,11 @@ function finish() {
     title = 'Empate a puntos';
     text = `Partida bloqueada: nadie puede jugar ni robar y los dos tenéis ${mine} puntos en la mano. Nadie gana.`;
   } else if (v.endReason === 'domino') {
-    title = v.winner === 0 ? 'Has ganado' : 'Gana Juan';
-    text = (v.winner === 0 ? 'Te has quedado sin fichas.' : 'Juan se ha quedado sin fichas.') + ` Suma ${v.score} puntos, los que quedan en la mano del rival.`;
+    title = v.winner === 0 ? 'Has ganado' : `Gana ${oppName()}`;
+    text = (v.winner === 0 ? 'Te has quedado sin fichas.' : `${oppName()} se ha quedado sin fichas.`) + ` Suma ${v.score} puntos, los que quedan en la mano del rival.`;
   } else {
-    title = v.winner === 0 ? 'Has ganado' : 'Gana Juan';
-    text = `Partida bloqueada. Gana quien tiene menos puntos en la mano: tú ${mine}, Juan ${theirs}. Suma ${v.score} puntos.`;
+    title = v.winner === 0 ? 'Has ganado' : `Gana ${oppName()}`;
+    text = `Partida bloqueada. Gana quien tiene menos puntos en la mano: tú ${mine}, ${oppName()} ${theirs}. Suma ${v.score} puntos.`;
   }
   if (!scored) {
     scored = true;
@@ -1050,8 +1404,8 @@ function finish() {
   $('resTxt').textContent = text;
   const left = game.hands[1];
   $('resLeft').innerHTML = left.length
-    ? `<span>Fichas de Juan:</span>${left.map(t => `<div class="tile h" role="img" aria-label="${spoken(t)}">${half(t[0])}${half(t[1])}</div>`).join('')}`
-    : '<span>Juan no tenía fichas.</span>';
+    ? `<span>Fichas de ${oppName()}:</span>${left.map(t => `<div class="tile h" role="img" aria-label="${spoken(t)}">${half(t[0])}${half(t[1])}</div>`).join('')}`
+    : `<span>${oppName()} no tenía fichas.</span>`;
   $('result').hidden = false;
   render();
   sr(`${title}. ${text}`);
@@ -1066,9 +1420,9 @@ $('draw').addEventListener('click', humanDraw);
 $('pass').addEventListener('click', humanPass);
 $('newGame').addEventListener('click', newGame);
 $('again').addEventListener('click', newGame);
-$('botSel').addEventListener('change', e => {
+$('botSel').addEventListener('change', e => {   // al elegir rival, sale su personaje y empieza una partida nueva
   pendingKind = e.target.value;
-  $('botNote').textContent = pendingKind !== botKind ? 'Se aplicará en la próxima partida.' : '';
+  newGame();
 });
 $('hand').addEventListener('keydown', e => {
   if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
