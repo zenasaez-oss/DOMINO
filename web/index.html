@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dominó con Paco</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,600;6..96,800&family=Playfair+Display:wght@800;900&family=Caveat:wght@600;700&family=Lilita+One&family=Nunito:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="static/style.css">
+  <!-- Pyodide: Python in the browser, so the page runs the real domino/ engine -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
+</head>
+<body>
+  <!-- the back wall of the room: a wine cellar, drawn by app.js -->
+  <div class="room" aria-hidden="true">
+    <svg id="cellar" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMin slice"></svg>
+  </div>
+
+  <header class="top">
+    <div class="brand">
+      <!-- a classic black tile, the double six, framed in gold -->
+      <svg class="brand-tile" viewBox="0 0 40 72" aria-hidden="true">
+        <rect x="1.5" y="1.5" width="37" height="69" rx="6" />
+        <line x1="7" y1="36" x2="33" y2="36" />
+        <g class="brand-pips">
+          <circle cx="12" cy="10" r="3" /><circle cx="28" cy="10" r="3" />
+          <circle cx="12" cy="19" r="3" /><circle cx="28" cy="19" r="3" />
+          <circle cx="12" cy="28" r="3" /><circle cx="28" cy="28" r="3" />
+          <circle cx="12" cy="44" r="3" /><circle cx="28" cy="44" r="3" />
+          <circle cx="12" cy="53" r="3" /><circle cx="28" cy="53" r="3" />
+          <circle cx="12" cy="62" r="3" /><circle cx="28" cy="62" r="3" />
+        </g>
+      </svg>
+      <div>
+        <h1>Dominó</h1>
+        <p class="tagline">Un juego clásico de dos personas</p>
+      </div>
+    </div>
+    <form id="new-game" class="controls">
+      <!-- the scoreboard and Paco's difficulty, side by side in one bar -->
+      <div class="hud">
+        <section class="scoreboard" aria-label="Marcador">
+          <h2 class="hud-title">Marcador</h2>
+          <div class="score">
+            <div class="score-you"><span class="score-num" id="wins-you">0</span><span class="score-label">Tú</span></div>
+            <div><span class="score-num" id="wins-tie">0</span><span class="score-label">Tablas</span></div>
+            <div class="score-paco"><span class="score-num" id="wins-bot">0</span><span class="score-label" id="score-bot-name">Paco</span></div>
+          </div>
+        </section>
+        <div class="difficulty">
+          <label for="level" class="hud-title">Elige tu personaje</label>
+          <select id="level" name="level">
+            <option value="easy">Paquito · fácil</option>
+            <option value="medium">Rosa · medio</option>
+            <option value="hard" selected>Paco · difícil</option>
+            <option value="superhard">C06 · experto</option>
+          </select>
+        </div>
+        <div class="hud-action">
+          <button type="submit" class="btn btn-play" disabled>Nueva partida</button>
+        </div>
+      </div>
+    </form>
+  </header>
+
+  <main class="layout">
+    <section class="game">
+      <!-- the character you play against, sitting across the table: the body is behind the
+           table; forearms, hands, tiles and drink are drawn in front of it. One drawing per
+           character; app.js shows the one for the level being played. -->
+      <div class="opponent" id="seat-bot">
+        <div class="opponent-info">
+          <h2 class="opponent-name" id="bot-name">Paco</h2>
+          <span class="opponent-tiles" id="bot-count"></span>
+        </div>
+        <div class="figure" id="figure" data-char="hard">
+          <!-- Paquito, a baby in his high chair (easy) -->
+          <svg class="char" id="char-easy" data-mood="idle" data-face="40 52 120 120" viewBox="10 30 180 230" role="img" aria-label="Paquito, un bebé en su trona" hidden>
+            <rect class="q-chair" x="40" y="118" width="120" height="150" rx="26" />
+            <rect class="q-chair-edge" x="52" y="130" width="96" height="8" rx="4" />
+            <path class="q-onesie" d="M44 262 C46 206 66 182 100 180 C134 182 154 206 156 262 Z" />
+            <path class="p-sleeve" d="M60 194 C44 202 37 222 39 242 L57 242 C55 222 58 210 67 201 Z" />
+            <path class="p-sleeve" d="M140 194 C156 202 163 222 161 242 L143 242 C145 222 142 210 133 201 Z" />
+            <path class="q-bib" d="M72 182 C74 220 126 220 128 182 C116 192 84 192 72 182 Z" />
+            <circle class="q-duck" cx="100" cy="202" r="6.5" />
+            <circle class="q-duck" cx="105" cy="196" r="4" />
+            <path class="q-beak" d="M108 196 l5 1 l-5 2 Z" />
+            <circle class="p-skin" cx="54" cy="116" r="9" />
+            <circle class="p-skin" cx="146" cy="116" r="9" />
+            <circle class="p-skin" cx="100" cy="112" r="48" />
+            <path class="q-curl" d="M100 66 C94 56 104 48 110 55 C114 61 106 66 103 61" />
+            <path class="p-brow p-brow-l q-brow" d="M74 96 q8 -5 16 0" />
+            <path class="p-brow p-brow-r q-brow" d="M110 96 q8 -5 16 0" />
+            <g class="p-eyes-open">
+              <circle class="p-pupil" cx="83" cy="113" r="6.5" />
+              <circle class="p-pupil" cx="117" cy="113" r="6.5" />
+              <circle class="q-sparkle" cx="85" cy="110" r="2" />
+              <circle class="q-sparkle" cx="119" cy="110" r="2" />
+            </g>
+            <g class="p-eyes-happy">
+              <path d="M76 115 q7 -8 14 0" />
+              <path d="M110 115 q7 -8 14 0" />
+            </g>
+            <circle class="p-cheek" cx="70" cy="132" r="9" />
+            <circle class="p-cheek" cx="130" cy="132" r="9" />
+            <ellipse class="p-flush" cx="100" cy="134" rx="38" ry="9" />
+            <ellipse class="p-nose" cx="100" cy="125" rx="4.5" ry="3.5" />
+            <path class="p-mouth m-idle" d="M92 139 q8 6 16 0" />
+            <path class="p-mouth m-think" d="M96 141 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0" />
+            <path class="p-mouth-open m-happy" d="M88 136 q12 18 24 0 Z" />
+            <path class="p-mouth m-sad" d="M92 145 q8 -6 16 0" />
+            <path class="p-mouth-open m-angry" d="M88 147 q12 -14 24 0 Z" />
+            <g class="p-anger q-tears">
+              <path d="M76 122 q-4 8 0 11 q4 -3 0 -11 Z" />
+              <path d="M124 122 q-4 8 0 11 q4 -3 0 -11 Z" />
+            </g>
+          </svg>
+          <!-- Rosa, from Seville: dark hair in a bun, a red carnation, hoop earrings, polka dots (medium) -->
+          <svg class="char" id="char-medium" data-mood="idle" data-face="26 34 156 156" viewBox="10 30 180 230" role="img" aria-label="Rosa, una señora sevillana" hidden>
+            <rect class="p-chair" x="30" y="118" width="140" height="150" rx="20" />
+            <rect class="p-chair-slat" x="44" y="132" width="112" height="10" rx="5" />
+            <path class="r-dress" d="M30 262 C30 202 52 172 100 168 C148 172 170 202 170 262 Z" />
+            <path class="p-sleeve" d="M50 178 C31 188 22 212 25 240 L48 242 C46 217 50 199 59 186 Z" />
+            <path class="p-sleeve" d="M150 178 C169 188 178 212 175 240 L152 242 C154 217 150 199 141 186 Z" />
+            <g class="r-dots">
+              <circle cx="64" cy="200" r="3.5" /><circle cx="84" cy="214" r="3.5" /><circle cx="116" cy="214" r="3.5" />
+              <circle cx="136" cy="200" r="3.5" /><circle cx="72" cy="236" r="3.5" /><circle cx="100" cy="230" r="3.5" />
+              <circle cx="128" cy="236" r="3.5" /><circle cx="56" cy="252" r="3.5" /><circle cx="144" cy="252" r="3.5" />
+              <circle cx="38" cy="214" r="3" /><circle cx="162" cy="214" r="3" /><circle cx="34" cy="234" r="3" /><circle cx="166" cy="234" r="3" />
+            </g>
+            <path class="p-skin-shade" d="M86 138 L86 166 Q100 174 114 166 L114 138 Z" />
+            <path class="r-ruffle" d="M72 172 q7 9 14 0 q7 9 14 0 q7 9 14 0 q7 9 14 0" />
+            <circle class="r-hair" cx="100" cy="54" r="17" />
+            <ellipse class="r-hair" cx="100" cy="100" rx="50" ry="54" />
+            <path class="p-skin" d="M61 96 C61 68 139 68 139 96 L139 118 C139 148 121 160 100 160 C79 160 61 148 61 118 Z" />
+            <path class="r-hair" d="M58 102 C55 62 145 62 142 102 C132 84 114 76 100 86 C86 76 68 84 58 102 Z" />
+            <circle class="r-earring" cx="58" cy="134" r="8" />
+            <circle class="r-earring" cx="142" cy="134" r="8" />
+            <g class="r-flower">
+              <circle cx="136" cy="68" r="8" /><circle cx="128" cy="62" r="6" /><circle cx="143" cy="61" r="6" /><circle cx="138" cy="76" r="5.5" />
+              <circle class="r-flower-heart" cx="136" cy="67" r="3.5" />
+            </g>
+            <path class="r-leaf" d="M124 74 q-8 2 -10 9 q8 0 10 -9 Z" />
+            <path class="p-brow p-brow-l r-brow" d="M70 98 q11 -7 22 -1" />
+            <path class="p-brow p-brow-r r-brow" d="M130 98 q-11 -7 -22 -1" />
+            <g class="p-eyes-open">
+              <circle class="p-pupil" cx="82" cy="111" r="4" />
+              <circle class="p-pupil" cx="118" cy="111" r="4" />
+            </g>
+            <path class="r-lash" d="M75 106 l-4 -3 M79 104 l-2 -4 M125 106 l4 -3 M121 104 l2 -4" />
+            <g class="p-eyes-happy">
+              <path d="M76 113 q6 -7 12 0" />
+              <path d="M112 113 q6 -7 12 0" />
+            </g>
+            <circle class="p-cheek" cx="72" cy="131" r="7" />
+            <circle class="p-cheek" cx="128" cy="131" r="7" />
+            <ellipse class="p-flush" cx="100" cy="133" rx="36" ry="9" />
+            <path class="p-nose" d="M100 112 C97 121 95 126 97 129 C99 131 101 131 103 129 C105 126 103 121 100 112 Z" />
+            <circle class="r-mole" cx="117" cy="137" r="1.6" />
+            <path class="p-mouth r-lips m-idle" d="M90 143 q10 7 20 0" />
+            <path class="p-mouth r-lips m-think" d="M95 145 q5 -2 10 1" />
+            <path class="p-mouth-open r-open m-happy" d="M87 140 q13 17 26 0 Z" />
+            <path class="p-mouth r-lips m-sad" d="M90 148 q10 -7 20 0" />
+            <path class="p-mouth r-lips m-angry" d="M88 149 q12 -9 24 0" />
+            <g class="p-anger">
+              <path d="M160 48 q5 4 10 0 M160 48 q4 5 0 10 M180 48 q-5 4 -10 0 M180 48 q-4 5 0 10 M160 68 q5 -4 10 0 M160 68 q4 -5 0 -10 M180 68 q-5 -4 -10 0 M180 68 q-4 -5 0 -10" />
+            </g>
+          </svg>
+          <!-- C06, a robot (expert) -->
+          <svg class="char" id="char-superhard" data-mood="idle" data-face="34 26 132 132" viewBox="10 30 180 230" role="img" aria-label="C06, un robot" hidden>
+            <rect class="k-seat" x="34" y="120" width="132" height="150" rx="14" />
+            <path class="k-metal" d="M34 262 L34 198 Q34 172 60 170 L140 170 Q166 172 166 198 L166 262 Z" />
+            <path class="p-sleeve" d="M50 178 C33 188 25 212 27 240 L48 242 C46 217 50 199 59 186 Z" />
+            <path class="p-sleeve" d="M150 178 C167 188 175 212 173 240 L152 242 C154 217 150 199 141 186 Z" />
+            <circle class="k-bolt" cx="44" cy="190" r="5" />
+            <circle class="k-bolt" cx="156" cy="190" r="5" />
+            <rect class="k-panel" x="72" y="184" width="56" height="44" rx="7" />
+            <text class="k-label" x="100" y="204" text-anchor="middle">C06</text>
+            <circle class="k-led" cx="86" cy="217" r="3" /><circle class="k-led k-led2" cx="100" cy="217" r="3" /><circle class="k-led k-led3" cx="114" cy="217" r="3" />
+            <rect class="k-neck" x="88" y="152" width="24" height="20" rx="3" />
+            <line class="k-antenna-rod" x1="100" y1="66" x2="100" y2="46" />
+            <circle class="k-antenna" cx="100" cy="43" r="5" />
+            <circle class="k-bolt" cx="56" cy="110" r="8" />
+            <circle class="k-bolt" cx="144" cy="110" r="8" />
+            <rect class="k-head" x="58" y="64" width="84" height="90" rx="18" />
+            <rect class="k-visor" x="66" y="92" width="68" height="32" rx="11" />
+            <rect class="p-brow p-brow-l k-brow" x="74" y="84" width="18" height="3.5" rx="1.5" />
+            <rect class="p-brow p-brow-r k-brow" x="108" y="84" width="18" height="3.5" rx="1.5" />
+            <g class="p-eyes-open">
+              <circle class="p-pupil k-eye" cx="84" cy="108" r="6" />
+              <circle class="p-pupil k-eye" cx="116" cy="108" r="6" />
+            </g>
+            <g class="p-eyes-happy k-happy">
+              <path d="M78 111 q6 -8 12 0" />
+              <path d="M110 111 q6 -8 12 0" />
+            </g>
+            <ellipse class="p-flush k-flush" cx="100" cy="108" rx="34" ry="14" />
+            <rect class="k-grille" x="80" y="132" width="40" height="12" rx="4" />
+            <path class="p-mouth k-mouth m-idle" d="M86 138 h28" />
+            <path class="p-mouth k-mouth m-think" d="M86 138 h4 m4 0 h4 m4 0 h4 m4 0 h4" />
+            <path class="p-mouth k-mouth m-happy" d="M86 135 q14 9 28 0" />
+            <path class="p-mouth k-mouth m-sad" d="M86 141 q14 -7 28 0" />
+            <path class="p-mouth k-mouth m-angry" d="M85 140 l5 -4 l5 4 l5 -4 l5 4 l5 -4 l5 4" />
+            <g class="p-anger">
+              <path d="M160 48 q5 4 10 0 M160 48 q4 5 0 10 M180 48 q-5 4 -10 0 M180 48 q-4 5 0 10 M160 68 q5 -4 10 0 M160 68 q4 -5 0 -10 M180 68 q-5 -4 -10 0 M180 68 q-4 -5 0 -10" />
+            </g>
+          </svg>
+          <!-- Paco, an old man in a flat cap (hard) -->
+          <svg class="char" id="char-hard" data-mood="idle" data-face="22 36 156 156" viewBox="10 30 180 230" role="img" aria-label="Paco, sentado al otro lado de la mesa">
+            <!-- the back of his chair -->
+            <rect class="p-chair" x="30" y="118" width="140" height="150" rx="20" />
+            <rect class="p-chair-slat" x="44" y="132" width="112" height="10" rx="5" />
+            <!-- body and upper arms -->
+            <path class="p-cardigan" d="M30 262 C30 200 50 168 100 164 C150 168 170 200 170 262 Z" />
+            <path class="p-sleeve" d="M50 176 C31 186 22 210 25 238 L48 240 C46 215 50 197 59 184 Z" />
+            <path class="p-sleeve" d="M150 176 C169 186 178 210 175 238 L152 240 C154 215 150 197 141 184 Z" />
+            <path class="p-shirt" d="M80 165 L100 202 L120 165 Z" />
+            <path class="p-collar" d="M80 165 L91 184 L100 171 Z M120 165 L109 184 L100 171 Z" />
+            <circle class="p-button" cx="100" cy="212" r="3" />
+            <circle class="p-button" cx="100" cy="228" r="3" />
+            <!-- neck -->
+            <path class="p-skin-shade" d="M84 138 L84 160 Q100 170 116 160 L116 138 Z" />
+            <!-- ears -->
+            <ellipse class="p-skin" cx="55" cy="114" rx="9" ry="14" />
+            <ellipse class="p-skin" cx="145" cy="114" rx="9" ry="14" />
+            <path class="p-line" d="M53 108 q5 6 0 13" />
+            <path class="p-line" d="M147 108 q-5 6 0 13" />
+            <!-- head -->
+            <path class="p-skin" d="M57 92 C57 62 143 62 143 92 L143 118 C143 148 124 162 100 162 C76 162 57 148 57 118 Z" />
+            <!-- white hair at the sides -->
+            <path class="p-hair" d="M56 84 C49 96 49 110 57 120 C58 106 61 96 66 88 Z" />
+            <path class="p-hair" d="M144 84 C151 96 151 110 143 120 C142 106 139 96 134 88 Z" />
+            <!-- flat cap -->
+            <path class="p-cap" d="M50 87 C47 55 74 40 104 40 C134 40 155 56 152 85 C130 78 72 78 50 87 Z" />
+            <path class="p-cap-line" d="M60 69 C80 59 124 57 144 67" />
+            <path class="p-cap-line" d="M57 78 C82 70 122 69 149 76" />
+            <circle class="p-cap-button" cx="104" cy="43" r="4" />
+            <path class="p-brim" d="M45 87 C70 74 132 72 157 84 C151 95 53 97 45 87 Z" />
+            <!-- forehead lines and crow's feet -->
+            <path class="p-line soft" d="M84 96 q16 -3 32 0" />
+            <path class="p-line" d="M64 118 q-4 4 -2 9" />
+            <path class="p-line" d="M136 118 q4 4 2 9" />
+            <path class="p-line soft" d="M80 127 q-6 10 -2 18" />
+            <path class="p-line soft" d="M120 127 q6 10 2 18" />
+            <!-- eyebrows -->
+            <path class="p-brow p-brow-l" d="M67 99 C73 91 89 91 95 97 C89 99 76 99 67 102 Z" />
+            <path class="p-brow p-brow-r" d="M133 99 C127 91 111 91 105 97 C111 99 124 99 133 102 Z" />
+            <!-- eyes -->
+            <g class="p-eyes-open">
+              <circle class="p-pupil" cx="82" cy="111" r="3.8" />
+              <circle class="p-pupil" cx="118" cy="111" r="3.8" />
+            </g>
+            <g class="p-eyes-happy">
+              <path d="M76 113 q6 -7 12 0" />
+              <path d="M112 113 q6 -7 12 0" />
+            </g>
+            <!-- glasses -->
+            <g class="p-glasses">
+              <circle cx="82" cy="111" r="13" />
+              <circle cx="118" cy="111" r="13" />
+              <path d="M95 110 q5 -4 10 0" />
+              <path d="M69 108 L58 104" />
+              <path d="M131 108 L142 104" />
+            </g>
+            <!-- cheeks and nose -->
+            <circle class="p-cheek" cx="69" cy="132" r="8" />
+            <circle class="p-cheek" cx="131" cy="132" r="8" />
+            <ellipse class="p-flush" cx="100" cy="134" rx="38" ry="9" />
+            <path class="p-nose" d="M100 107 C94 119 87 126 91 132 C95 137 105 137 109 132 C113 126 106 119 100 107 Z" />
+            <!-- mouths: one per mood -->
+            <path class="p-mouth m-idle" d="M90 148 q10 6 20 0" />
+            <path class="p-mouth m-think" d="M94 149 q6 -2 12 1" />
+            <path class="p-mouth-open m-happy" d="M86 145 q14 18 28 0 Z" />
+            <path class="p-mouth m-sad" d="M90 152 q10 -7 20 0" />
+            <path class="p-mouth m-angry" d="M88 153 q12 -9 24 0" />
+            <!-- moustache -->
+            <path class="p-moustache" d="M100 134 C90 129 75 133 70 147 C79 142 88 145 94 142 C97 141 99 140 100 140 C101 140 103 141 106 142 C112 145 121 142 130 147 C125 133 110 129 100 134 Z" />
+            <path class="p-line soft" d="M91 158 q9 3 18 0" />
+            <g class="p-anger">
+              <path d="M160 48 q5 4 10 0 M160 48 q4 5 0 10 M180 48 q-5 4 -10 0 M180 48 q-4 5 0 10 M160 68 q5 -4 10 0 M160 68 q4 -5 0 -10 M180 68 q-5 -4 -10 0 M180 68 q-4 -5 0 -10" />
+            </g>
+          </svg>
+          <!-- his tiles, face down, held up in a fan -->
+          <div id="bot-hand" class="fan" aria-hidden="true"></div>
+          <svg class="paco-front" viewBox="10 30 180 230" aria-hidden="true">
+            <!-- forearms resting on the table -->
+            <path class="p-sleeve" d="M25 226 C21 244 33 256 52 256 L80 254 L80 236 L54 236 C45 236 43 230 46 222 Z" />
+            <path class="p-sleeve" d="M175 226 C179 244 167 256 148 256 L120 254 L120 236 L146 236 C155 236 157 230 154 222 Z" />
+            <rect class="p-cuff" x="74" y="235" width="8" height="20" rx="3" />
+            <rect class="p-cuff" x="118" y="235" width="8" height="20" rx="3" />
+            <!-- hands around the tiles -->
+            <path class="p-hand" d="M80 238 C80 232 92 231 96 236 C99 240 98 252 90 254 C84 255 80 250 80 246 Z" />
+            <path class="p-hand" d="M120 238 C120 232 108 231 104 236 C101 240 102 252 110 254 C116 255 120 250 120 246 Z" />
+            <path class="p-finger" d="M84 244 h8 M84 249 h7" />
+            <path class="p-finger" d="M116 244 h-8 M116 249 h-7" />
+          </svg>
+          <!-- what each one has on the table, on a coaster -->
+          <!-- Paquito: his baby bottle -->
+          <svg class="posavasos" data-for="easy" viewBox="0 0 50 96" aria-hidden="true" hidden>
+            <ellipse class="p-coaster-edge" cx="25" cy="88" rx="23" ry="7" />
+            <ellipse class="p-coaster" cx="25" cy="86" rx="23" ry="7" />
+            <g class="c-lift">
+              <path class="d-teat" d="M21 22 C21 12 29 12 29 22 Z" />
+              <rect class="d-ring" x="16" y="22" width="18" height="8" rx="2" />
+              <rect class="d-bottle" x="15" y="29" width="20" height="54" rx="7" />
+              <rect class="d-milk" x="17" y="46" width="16" height="35" rx="5" />
+              <path class="d-marks" d="M15 40 h5 M15 52 h5 M15 64 h5" />
+            </g>
+          </svg>
+          <!-- Rosa: a little glass of fino -->
+          <svg class="posavasos" data-for="medium" viewBox="0 0 50 96" aria-hidden="true" hidden>
+            <ellipse class="p-coaster-edge" cx="25" cy="88" rx="23" ry="7" />
+            <ellipse class="p-coaster" cx="25" cy="86" rx="23" ry="7" />
+            <g class="c-lift">
+              <path class="c-glass" d="M14 84 C17 80 33 80 36 84 Z" />
+              <rect class="c-glass" x="23.8" y="58" width="2.4" height="24" rx="1" />
+              <path class="d-fino" d="M15 38 L35 38 C35 50 31 58 25 58.5 C19 58 15 50 15 38 Z" />
+              <path class="c-bowl" d="M15 16 C14 36 15 50 18 55 C21 59 29 59 32 55 C35 50 36 36 35 16 Z" />
+              <path class="c-shine" d="M18 22 C18 34 19 44 21 50" />
+            </g>
+          </svg>
+          <!-- C06: a can of oil -->
+          <svg class="posavasos" data-for="superhard" viewBox="0 0 50 96" aria-hidden="true" hidden>
+            <ellipse class="p-coaster-edge" cx="25" cy="88" rx="23" ry="7" />
+            <ellipse class="p-coaster" cx="25" cy="86" rx="23" ry="7" />
+            <g class="c-lift">
+              <path class="d-spout" d="M30 40 L42 18 L45 20 L35 42 Z" />
+              <path class="d-can" d="M10 84 L10 46 Q10 38 18 36 L32 36 Q40 38 40 46 L40 84 Z" />
+              <rect class="d-label" x="12" y="54" width="26" height="16" rx="2" />
+              <text class="d-label-text" x="25" y="65" text-anchor="middle">ACEITE</text>
+              <path class="d-handle" d="M18 36 Q25 26 32 36" />
+            </g>
+          </svg>
+          <!-- Paco: his glass of red wine -->
+          <svg class="posavasos" data-for="hard" viewBox="0 0 50 96" aria-hidden="true">
+            <defs>
+              <linearGradient id="wine" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#c2274a" />
+                <stop offset="1" stop-color="#5e0f22" />
+              </linearGradient>
+            </defs>
+            <ellipse class="p-coaster-edge" cx="25" cy="88" rx="23" ry="7" />
+            <ellipse class="p-coaster" cx="25" cy="86" rx="23" ry="7" />
+            <ellipse class="p-coaster-ring" cx="25" cy="86" rx="17" ry="4.8" />
+            <g class="c-lift"><g transform="translate(5 6)">
+              <path class="c-glass" d="M7 79 C10 74 30 74 33 79 Z" />
+              <rect class="c-glass" x="18.6" y="44" width="2.8" height="32" rx="1.2" />
+              <path class="c-wine" fill="url(#wine)" d="M7.6 20 L32.4 20 C32 34 28 43.5 20 44 C12 43.5 8 34 7.6 20 Z" />
+              <ellipse class="c-surface" cx="20" cy="20" rx="12.4" ry="2.2" />
+              <path class="c-bowl" d="M6 4 L34 4 C34 30 30 45 20 45.5 C10 45 6 30 6 4 Z" />
+              <path class="c-shine" d="M10.5 9 C10.5 24 12 34 15.5 39" />
+            </g></g>
+          </svg>
+        </div>
+        <div class="bubble" id="bubble" aria-live="polite">Barajando las fichas…</div>
+      </div>
+
+      <!-- the table, and the slate with the history right beside it -->
+      <div class="table-row">
+      <div class="table">
+        <div class="stitch" aria-hidden="true"></div>
+        <div class="table-main">
+          <div class="table-meta">
+            <span id="turn" class="turn"></span>
+            <button type="button" class="pile" id="pile" disabled>
+              <span class="pile-stack" id="pile-stack" aria-hidden="true"></span>
+              <span class="pile-label">Pozo <b id="pile-count"></b></span>
+            </button>
+          </div>
+          <!-- the line of tiles, with the number open at each end in a box either side -->
+          <div class="play-row">
+            <div class="end-box end-box-left">
+              <span class="end-box-label">Extremo izq.</span>
+              <span class="end-box-num" id="end-left">—</span>
+            </div>
+            <div id="board" class="board">
+              <p class="board-msg">Cargando el juego…</p>
+            </div>
+            <div class="end-box end-box-right">
+              <span class="end-box-label">Extremo der.</span>
+              <span class="end-box-num" id="end-right">—</span>
+            </div>
+          </div>
+          <div class="side-pick" id="side-pick" hidden>
+            <button type="button" class="btn btn-side" id="pick-left"></button>
+            <button type="button" class="btn btn-side" id="pick-right"></button>
+          </div>
+        </div>
+      </div>
+      <div class="side-col">
+        <section class="slate" aria-label="Historial">
+          <h2 class="slate-title">Historial</h2>
+          <ul id="log" class="slate-list"></ul>
+        </section>
+        <button type="button" class="rules-btn" id="rules-btn">
+          <svg class="rules-icon" viewBox="0 0 32 40" aria-hidden="true">
+            <path d="M3 2 H22 L29 9 V38 H3 Z" />
+            <path d="M22 2 V9 H29" />
+            <path d="M8 16 H24 M8 22 H24 M8 28 H19" />
+          </svg>
+          <span class="rules-text"><span class="rules-title">Reglas</span><span class="rules-sub">Toca para leerlas</span></span>
+        </button>
+      </div>
+      </div>
+
+      <!-- you -->
+      <div class="me" id="seat-you">
+        <div class="me-bar">
+          <div class="me-avatar" aria-hidden="true" id="your-initial">T</div>
+          <div class="me-text">
+            <span class="me-name" id="your-name">Tú</span>
+            <span class="hint" id="hint"></span>
+          </div>
+          <div class="actions">
+            <button id="draw-btn" type="button" class="btn btn-action" disabled>Robar</button>
+            <button id="pass-btn" type="button" class="btn btn-action" disabled>Pasar</button>
+          </div>
+        </div>
+        <div class="rack">
+          <div id="your-hand" class="hand"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <!-- the rules, on a sheet of paper -->
+  <dialog id="rules-sheet" class="sheet" aria-labelledby="rules-title">
+    <h2 id="rules-title">Reglas del dominó</h2>
+    <section>
+      <h3>Preparación</h3>
+      <ul>
+        <li>Se juega con las 28 fichas del doble seis.</li>
+        <li>Cada jugador recibe 7 fichas. Las otras 14 forman el pozo.</li>
+        <li>En la primera partida sale quien tenga el doble más alto. Después se van turnando: una partida sale Paco y la siguiente tú.</li>
+        <li>Quien sale pone su doble más alto. Si no tiene dobles, su ficha más alta.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>En tu turno</h3>
+      <ul>
+        <li>Pon una ficha que tenga el mismo número que uno de los dos extremos de la mesa.</li>
+        <li>Si no tienes ninguna que encaje, roba del pozo hasta que puedas jugar.</li>
+        <li>Si el pozo está vacío y no puedes jugar, pasas.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Cómo se gana</h3>
+      <ul>
+        <li>Gana quien se quede antes sin fichas, y se lleva los puntos que le quedan al rival.</li>
+        <li>Si nadie puede jugar, la partida se cierra: gana quien sume menos puntos en la mano. Si suman lo mismo, son tablas.</li>
+      </ul>
+    </section>
+    <button type="button" class="btn btn-play" id="rules-close">Entendido</button>
+  </dialog>
+
+  <dialog id="result">
+    <div class="result-face" id="result-face"></div>
+    <h2 id="result-title"></h2>
+    <p id="result-text"></p>
+    <div id="result-bot" class="result-hand"></div>
+    <button id="again-btn" type="button" class="btn btn-play">Otra partida</button>
+  </dialog>
+
+  <script src="static/app.js"></script>
+</body>
+</html>
