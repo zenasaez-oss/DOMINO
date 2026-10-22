@@ -5,9 +5,9 @@ from domino.board import board_ends
 from domino.domino import pip_count
 from domino.game import Game
 from domino.player import Player
-from tools.play_expert import (BIT, INDEX, STYLES, TILES, ExpertBot, TooBig, ends_after, legal, negamax,
-                               opponent_appeal)
-from tools.play_scoring import ScoringBot
+from domino.bots.expert import (BIT, INDEX, STYLES, TILES, ExpertBot, TooBig, ends_after, legal, negamax,
+                                opponent_appeal)
+from domino.bots import ScoringBot
 
 
 def mask(tiles):

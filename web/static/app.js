@@ -10,8 +10,8 @@ const PY_FILES = [
   "domino/__init__.py", "domino/board.py", "domino/deck.py", "domino/domino.py",
   "domino/game.py", "domino/hand.py", "domino/player.py", "domino/rules.py",
   "domino/turn_manager.py",
-  "tools/__init__.py", "tools/play.py", "tools/play_scoring.py", "tools/play_montecarlo.py",
-  "tools/play_expert.py",
+  "domino/bots/__init__.py", "domino/bots/greedy.py", "domino/bots/scoring.py",
+  "domino/bots/montecarlo.py", "domino/bots/expert.py",
   "web/__init__.py", "web/session.py",
 ];
 // the page lives in web/, the packages next to it (a page can set its own PY_ROOT)

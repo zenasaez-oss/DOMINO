@@ -2,10 +2,10 @@ import copy
 import random
 import unittest
 
+from domino.bots.montecarlo import (BIT, INDEX, MonteCarloBot, ends_after, solve)
 from domino.game import Game
 from domino.player import Player
 from tools import arena
-from tools.play_montecarlo import (BIT, INDEX, MonteCarloBot, ends_after, solve)
 
 
 def tiles(mask):
