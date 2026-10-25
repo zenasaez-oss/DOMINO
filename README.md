@@ -45,6 +45,39 @@ game.state(for_seat=1)          # board, whose turn, my hand, my moves, winner .
 
 Illegal actions raise `ValueError` and leave the game unchanged.
 
+## Bots
+
+Every bot inherits from `Bot` (`domino/bots/base.py`) and implements four methods: who it
+is (`get_name`, `get_authors`, `get_description`) and how it plays (`choose`). A bot that
+forgets one is refused as soon as it's created.
+
+A bot never gets the game itself. On its turn it gets `game.view(seat)`: its own hand plus
+everything public (board, ends, how many tiles the opponent holds, how many are left to draw,
+and the history of plays, draws and passes). The opponent's tiles and the boneyard aren't in
+it, so a bot can't cheat even if it tries.
+
+```python
+from domino.bots import Bot
+
+class MyBot(Bot):
+    @classmethod
+    def get_name(cls):
+        return "My bot"
+
+    @classmethod
+    def get_authors(cls):
+        return ["Your name"]
+
+    @classmethod
+    def get_description(cls):
+        return "Plays its heaviest tile."
+
+    def choose(self, view, moves):          # moves = every legal (tile, side)
+        return max(moves, key=lambda m: sum(m[0]))
+
+tile, side = MyBot().choose(game.view(seat), game.legal_moves(seat))
+```
+
 ## Running
 
 ```
@@ -80,8 +113,8 @@ Try it on your computer, from the project folder:
 
 ## The Monte Carlo bot
 
-`MonteCarloBot` (in `domino/bots/montecarlo.py`) is the hard bot. It only reads
-`game.state(for_seat=its_seat)`, i.e. what any player at the table can see, and it works out what the
+`MonteCarloBot` (in `domino/bots/montecarlo.py`) is the hard bot. Like every bot it only gets
+its view (`game.view(its_seat)`), i.e. what any player at the table can see, and it works out what the
 opponent's turns reveal by itself (drawing or passing means they held no tile with the open ends).
 
 For each move it deals the opponent many possible hands that fit what has been seen, plays the rest of
@@ -93,7 +126,7 @@ from domino.bots import MonteCarloBot
 
 bot = MonteCarloBot(seat=1)                       # samples=300 hands per decision by default
 bot = MonteCarloBot(seat=1, time_limit=0.5)       # or: think for 0.5 s per decision
-tile, side = bot.choose(game, game.legal_moves(1))
+tile, side = bot.choose(game.view(1), game.legal_moves(1))
 ```
 
 Measured with `python -m tools.arena` (games alternate seats; win rate of the first bot):
@@ -109,7 +142,7 @@ repeating the measurement gives a few points of difference either way.
 
 ## The expert bot
 
-`ExpertBot` (`domino/bots/expert.py`) only reads `game.state(for_seat=its_seat)`, what any
+`ExpertBot` (`domino/bots/expert.py`) only gets its view (`game.view(its_seat)`), what any
 player at the table can see, and works out the opponent's tiles from more than their draws
 and passes:
 
@@ -147,6 +180,6 @@ from domino.bots import ExpertBot
 
 bot = ExpertBot(seat=1)                         # thinks 0.3 s per decision by default
 bot = ExpertBot(seat=1, time_limit=0.6)         # or longer
-tile, side = bot.choose(game, game.legal_moves(1))
+tile, side = bot.choose(game.view(1), game.legal_moves(1))
 bot.style_odds()                                # {'montecarlo': 0.7, 'scoring': 0.2, ...}
 ```

@@ -85,11 +85,12 @@ class Session:
 
     # --- bot's turn ---
     def bot_choice(self, moves):
+        view = self.game.view(BOT)   # the bot only ever sees this, never the game itself
         if self.strong is not None:
-            return self.strong.choose(self.game, moves)
+            return self.strong.choose(view, moves)
         if self.level == "medium":
-            return self.bot.choose(self.game, moves)
-        return GreedyBot(BOT).choose(self.game, moves)  # easy: heaviest tile
+            return self.bot.choose(view, moves)
+        return GreedyBot(BOT).choose(view, moves)  # easy: heaviest tile
 
     def run_bot(self):
         """Let the bot play until it's your turn again or the game is over."""

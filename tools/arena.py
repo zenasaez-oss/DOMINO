@@ -39,7 +39,7 @@ def play_game(names, seed, options=None):
         while True:
             moves = game.legal_moves(seat)
             if moves:
-                tile, side = bots[seat].choose(game, moves)
+                tile, side = bots[seat].choose(game.view(seat), moves)
                 game.play(seat, tile, side)
                 played = True
                 break

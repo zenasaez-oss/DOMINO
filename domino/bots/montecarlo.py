@@ -247,12 +247,11 @@ class MonteCarloBot(Bot):
             self.opponent_lacks |= ends
 
     # --- the decision ---------------------------------------------------------------------
-    def choose(self, game, moves):
-        view = game.state(for_seat=self.seat)       # the only thing we ever read from the game
+    def choose(self, view, moves):
         board = view["board"]
         hand = list(view["my_hand"])
         yard = view["boneyard_size"]
-        opp_n = view["players"][self.opponent]["tiles_left"]
+        opp_n = view["opponent_tiles"]
         self._learn(len(board), yard, len(hand))
         if len(moves) == 1:                          # forced move (including the opening tile)
             self._remember(moves[0], view)

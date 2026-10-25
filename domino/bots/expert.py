@@ -1,6 +1,6 @@
 """Superhard bot: reads the opponent from every move they make, not only from their draws.
 
-How it thinks (it only reads game.state(for_seat=its_seat), what any player at the table sees):
+How it thinks (it only ever gets its view, what any player at the table sees):
   1. Hard facts. Drawing or passing shows the opponent holds no tile with the open numbers.
   2. Soft clues. Every tile the opponent chooses says something about the tiles they did NOT
      choose: someone who lays a light tile while holding a heavy double that also fitted is
@@ -451,7 +451,7 @@ class ExpertBot(Bot):
     def _weigh_styles(self, view, new):
         """The last `new` clues are fresh: average how likely each style made those choices over
         hands the opponent may hold, and add that to the evidence for each style."""
-        their_n = view["players"][self.opponent]["tiles_left"]
+        their_n = view["opponent_tiles"]
         seen = {norm(t) for t in view["my_hand"]} | {norm(t) for t in view["board"]}
         unseen = [t for t in TILES if t not in seen]
         fits = [t for t in unseen
@@ -503,13 +503,12 @@ class ExpertBot(Bot):
         return math.log(mix) if mix > 0 else -60.0
 
     # --- what it believes the opponent holds ------------------------------------------------
-    def belief(self, game, worlds=400):
+    def belief(self, view, worlds=400):
         """{tile: probability the opponent holds it} for every tile we can't see, from what the
         bot knows right now (call it after choose, before the move is played)."""
-        view = game.state(for_seat=self.seat)
         seen = {norm(t) for t in view["my_hand"]} | {norm(t) for t in view["board"]}
         unseen = [t for t in TILES if t not in seen]
-        their_n = view["players"][self.opponent]["tiles_left"]
+        their_n = view["opponent_tiles"]
         fits = [t for t in unseen
                 if t[0] not in self.lacks and t[1] not in self.lacks and t not in self.never]
         if len(fits) < their_n:
@@ -525,8 +524,7 @@ class ExpertBot(Bot):
         return {t: held[t] / total for t in unseen}
 
     # --- the decision ----------------------------------------------------------------------
-    def choose(self, game, moves):
-        view = game.state(for_seat=self.seat)
+    def choose(self, view, moves):
         self._learn(view)
         if not self._opening_read:
             self._read_opening(view, moves)
@@ -536,7 +534,7 @@ class ExpertBot(Bot):
 
         hand = [tuple(t) for t in view["my_hand"]]
         board = view["board"]
-        their_n = view["players"][self.opponent]["tiles_left"]
+        their_n = view["opponent_tiles"]
         seen = {norm(t) for t in hand} | {norm(t) for t in board}
         unseen = [t for t in TILES if t not in seen]
         fits = [t for t in unseen

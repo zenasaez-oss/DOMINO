@@ -21,5 +21,5 @@ class GreedyBot(Bot):
     def __init__(self, seat):
         self.seat = seat
 
-    def choose(self, game, moves):
+    def choose(self, view, moves):
         return max(moves, key=lambda m: pip_count(m[0]))

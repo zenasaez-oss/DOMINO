@@ -18,7 +18,7 @@ def bot_turn(game, bot):
     while True:
         moves = game.legal_moves(BOT)
         if moves:
-            tile, side = bot.choose(game, moves)
+            tile, side = bot.choose(game.view(BOT), moves)
             game.play(BOT, tile, side)
             print(f"Bot plays {tile_str(tile)} on the {'left' if side == 'L' else 'right'}")
             return

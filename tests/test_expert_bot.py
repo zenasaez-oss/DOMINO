@@ -34,7 +34,7 @@ def play_game(bots, seed):
         while True:
             moves = game.legal_moves(seat)
             if moves:
-                move = bots[seat].choose(game, moves)
+                move = bots[seat].choose(game.view(seat), moves)
                 assert move in moves, f"illegal move {move}"
                 game.play(seat, *move)
                 played = True
@@ -52,21 +52,18 @@ def play_game(bots, seed):
     return game.winner
 
 
-class FakeGame:
-    """Just enough of a Game for the bot to read: the state it would see from its seat."""
-
-    def __init__(self, board, my_hand, opp_left, yard, seat=1):
-        self.view = {
-            "board": board,
-            "ends": (board[0][0], board[-1][1]) if board else None,
-            "my_hand": my_hand,
-            "players": [{"tiles_left": opp_left}, {"tiles_left": len(my_hand)}] if seat == 1
-            else [{"tiles_left": len(my_hand)}, {"tiles_left": opp_left}],
-            "boneyard_size": yard,
-        }
-
-    def state(self, for_seat=None):
-        return self.view
+def fake_view(board, my_hand, opp_left, yard, seat=1):
+    """A view (what the bot would see from its seat) for a made-up position."""
+    return {
+        "my_seat": seat,
+        "my_hand": my_hand,
+        "board": board,
+        "ends": (board[0][0], board[-1][1]) if board else None,
+        "opponent_tiles": opp_left,
+        "boneyard_size": yard,
+        "current_seat": seat,
+        "history": [],
+    }
 
 
 class TestHelpers(unittest.TestCase):
@@ -114,12 +111,12 @@ class TestExactSolver(unittest.TestCase):
 class TestOpening(unittest.TestCase):
     def test_a_double_opening_rules_out_higher_doubles(self):
         bot = ExpertBot(1, samples=5, seed=1)
-        bot._read_opening(FakeGame([(4, 4)], [(0, 1)], 6, 14).state(), [((0, 1), "R")])
+        bot._read_opening(fake_view([(4, 4)], [(0, 1)], 6, 14), [((0, 1), "R")])
         self.assertEqual(bot.never, {(5, 5), (6, 6)})
 
     def test_a_plain_opening_rules_out_every_double_and_heavier_tiles(self):
         bot = ExpertBot(1, samples=5, seed=1)
-        bot._read_opening(FakeGame([(3, 5)], [(0, 1)], 6, 14).state(), [((0, 1), "R")])
+        bot._read_opening(fake_view([(3, 5)], [(0, 1)], 6, 14), [((0, 1), "R")])
         self.assertTrue(all((n, n) in bot.never for n in range(7)))
         self.assertIn((4, 6), bot.never)            # 10 dots: heavier than 3-5
         self.assertIn((2, 6), bot.never)            # 8 dots like 3-5, but its 6 beats the 5
@@ -128,20 +125,20 @@ class TestOpening(unittest.TestCase):
 
     def test_when_we_open_it_only_counts_under_the_engines_rule(self):
         mine = ExpertBot(1, samples=5, seed=1, global_opening=False)
-        mine._read_opening(FakeGame([], [(4, 4), (0, 1)], 7, 14).state(), [((4, 4), "R")])
+        mine._read_opening(fake_view([], [(4, 4), (0, 1)], 7, 14), [((4, 4), "R")])
         self.assertEqual(mine.never, set())
 
 
 class TestDecisions(unittest.TestCase):
     def test_goes_out_when_it_can(self):
         bot = ExpertBot(1, samples=10, seed=3)
-        game = FakeGame([(2, 3)], [(3, 6)], 5, 10)
-        self.assertEqual(bot.choose(game, [((3, 6), "R")]), ((3, 6), "R"))
+        view = fake_view([(2, 3)], [(3, 6)], 5, 10)
+        self.assertEqual(bot.choose(view, [((3, 6), "R")]), ((3, 6), "R"))
 
     def test_belief_is_a_probability_for_each_hidden_tile(self):
         game = Game([Player("a", "A"), Player("b", "B")])
         bot = ExpertBot(1, samples=10, seed=4)
-        belief = bot.belief(game, worlds=200)
+        belief = bot.belief(game.view(1), worlds=200)
         self.assertTrue(all(0.0 <= p <= 1.0 for p in belief.values()))
         self.assertAlmostEqual(sum(belief.values()), len(game.players[0].hand), places=6)
 

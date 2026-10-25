@@ -15,7 +15,7 @@ To write a bot, inherit from Bot and fill in the four required methods:
         def get_description(cls):
             return "Plays its heaviest tile."
 
-        def choose(self, game, moves):
+        def choose(self, view, moves):
             return moves[0]
 
 Bot inherits from ABC (abstract base class) and marks the required methods with
@@ -27,6 +27,10 @@ error naming the missing method, instead of failing halfway through a game:
 
 Identity (name, authors, description) uses classmethods, so the website, the ranking and the
 docs can read it from the class without creating a bot.
+
+A bot never gets the Game itself, only `view`: what its seat is allowed to see (its own hand
+and everything public), built by Game.view(seat). The opponent's tiles and the boneyard aren't
+in it, so a bot can't cheat even if it tries.
 """
 from abc import ABC, abstractmethod
 
@@ -52,10 +56,13 @@ class Bot(ABC):
 
     # --- playing --------------------------------------------------------------------------
     @abstractmethod
-    def choose(self, game, moves):
-        """Pick the move to play. Called only when the bot has at least one legal move.
+    def choose(self, view, moves):
+        """Pick the move to play. Called only when the bot has at least one legal move;
+        drawing and passing are done for it automatically.
 
-        game  - the current game
+        view  - what this bot may see, a dict (see Game.view):
+                my_seat, my_hand, board, ends, opponent_tiles, boneyard_size,
+                current_seat, history
         moves - every legal move, as (tile, side) with side "L" or "R"
 
         Must return one of `moves`.

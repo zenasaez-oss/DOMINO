@@ -66,18 +66,19 @@ class ScoringBot(Bot):
             self.opponent_lacks |= set(ends)
         # Played without drawing: nothing learned, and nothing they already lacked changes.
 
-    def choose(self, game, moves):
-        hand = game.players[self.seat].hand
-        opp_tiles = len(game.players[self.opponent].hand)
+    def choose(self, view, moves):
+        hand = view["my_hand"]
+        board = view["board"]
+        opp_tiles = view["opponent_tiles"]
 
         def unseen(rest, n):
             """How many tiles with `n` we haven't seen (not on the board, not in our hand)."""
-            return NUMBERS_PER_SET - sum(n in t for t in game.board) - sum(n in t for t in rest)
+            return NUMBERS_PER_SET - sum(n in t for t in board) - sum(n in t for t in rest)
 
         def score(move):
             tile, side = move
             rest = [t for t in hand if t != tile]
-            new_ends = set(ends_after(game.board, tile, side))
+            new_ends = set(ends_after(board, tile, side))
 
             s = pip_count(tile)                                   # weight
             if is_double(tile):
