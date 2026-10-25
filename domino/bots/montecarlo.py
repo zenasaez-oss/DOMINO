@@ -14,6 +14,7 @@ import random
 import time
 
 from ..board import LEFT
+from .base import Bot
 
 # --- tile bookkeeping -------------------------------------------------------------------
 TILES = [(a, b) for a in range(7) for b in range(a, 7)]   # same order as domino.full_set()
@@ -186,7 +187,7 @@ def rollout(me, opp, yard, left, right, turn, passes, rng, pick=_heuristic_pick,
         turn ^= 1
 
 
-class MonteCarloBot:
+class MonteCarloBot(Bot):
     """Hard bot: sampled opponent hands + playouts, exact solving once the boneyard is empty.
 
     seat       - which seat the bot plays
@@ -195,6 +196,19 @@ class MonteCarloBot:
     seed       - optional, makes a game reproducible
     max_time   - safety cap in seconds per decision for the fixed-samples mode (default 2)
     """
+
+    @classmethod
+    def get_name(cls):
+        return "Monte Carlo"
+
+    @classmethod
+    def get_authors(cls):
+        return ["santiagofernandezmarco"]
+
+    @classmethod
+    def get_description(cls):
+        return ("Imagines many hands the opponent could hold, plays each move out to the end in "
+                "every one, and keeps the move that wins most; solves the endgame exactly.")
 
     def __init__(self, seat, samples=300, time_limit=None, seed=None, policy="light", margin=0.02, max_time=2.0):
         self.seat = seat

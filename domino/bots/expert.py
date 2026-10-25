@@ -19,8 +19,9 @@ import random
 import time
 
 from ..board import LEFT
+from .base import Bot
 
-TILES = [(a, b) for a in range(7) for b in range(a, 7)]
+TILES =[(a, b) for a in range(7) for b in range(a, 7)]
 INDEX = {t: i for i, t in enumerate(TILES)}
 BIT = [1 << i for i in range(len(TILES))]
 PIPS = [a + b for a, b in TILES]
@@ -263,7 +264,7 @@ def negamax(mine, theirs, left, right, passed, yard, drawn, memo, budget):
     return value
 
 
-class ExpertBot:
+class ExpertBot(Bot):
     """seat       - which seat it plays
     time_limit - seconds to think per decision (default 0.3)
     samples    - optional fixed number of imagined opponent hands instead of a time limit
@@ -273,6 +274,19 @@ class ExpertBot:
                  BOTH hands opens), which tells us about the opponent's hand even when we
                  opened; False when each game's opener simply plays their own best tile
     """
+
+    @classmethod
+    def get_name(cls):
+        return "Expert"
+
+    @classmethod
+    def get_authors(cls):
+        return ["carlosjtabera-dev"]
+
+    @classmethod
+    def get_description(cls):
+        return ("Reads the opponent's hand from their draws, passes and choices, learns their "
+                "playing style, and solves the last moves exactly.")
 
     def __init__(self, seat, time_limit=0.3, samples=None, sharpness=1.0, seed=None, prune=True,
                  global_opening=True, mimic=True, exact_yard=EXACT_YARD, budget=BUDGET, me_like_model=True,

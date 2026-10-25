@@ -10,7 +10,7 @@ const PY_FILES = [
   "domino/__init__.py", "domino/board.py", "domino/deck.py", "domino/domino.py",
   "domino/game.py", "domino/hand.py", "domino/player.py", "domino/rules.py",
   "domino/turn_manager.py",
-  "domino/bots/__init__.py", "domino/bots/greedy.py", "domino/bots/scoring.py",
+  "domino/bots/__init__.py", "domino/bots/base.py", "domino/bots/greedy.py", "domino/bots/scoring.py",
   "domino/bots/montecarlo.py", "domino/bots/expert.py",
   "web/__init__.py", "web/session.py",
 ];

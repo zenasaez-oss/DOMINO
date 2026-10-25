@@ -7,6 +7,7 @@ import random
 
 from ..board import LEFT, board_ends
 from ..domino import is_double, pip_count
+from .base import Bot
 
 NUMBERS_PER_SET = 7  # in a double-six set every number appears on 7 tiles
 
@@ -21,12 +22,25 @@ def ends_after(board, tile, side):
     return left, (tile[1] if tile[0] == right else tile[0])
 
 
-class ScoringBot:
+class ScoringBot(Bot):
     """Scores every legal move and plays the best one.
 
     It only uses what any player at the table can see: the board, its own hand,
     how many tiles the opponent holds, and when the opponent draws or passes.
     """
+
+    @classmethod
+    def get_name(cls):
+        return "Scoring"
+
+    @classmethod
+    def get_authors(cls):
+        return ["Zena Saez"]
+
+    @classmethod
+    def get_description(cls):
+        return ("Scores every legal move on weight, doubles, keeping tiles that fit and blocking "
+                "numbers the opponent lacks, then plays the best one.")
 
     def __init__(self, seat):
         self.seat = seat
