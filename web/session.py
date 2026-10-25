@@ -19,7 +19,7 @@ double in their hand (or their heaviest tile if they have no double).
 import json
 
 from domino.board import board_ends
-from domino.bots import LEVELS, ExpertBot, GreedyBot, MonteCarloBot, ScoringBot
+from domino.bots import LEVELS, ExpertBot, GreedyBot, MonteCarloBot, ScoringBot, check_move
 from domino.game import Game
 from domino.hand import highest_double, highest_tile
 from domino.player import Player
@@ -87,10 +87,12 @@ class Session:
     def bot_choice(self, moves):
         view = self.game.view(BOT)   # the bot only ever sees this, never the game itself
         if self.strong is not None:
-            return self.strong.choose(view, moves)
-        if self.level == "medium":
-            return self.bot.choose(view, moves)
-        return GreedyBot(BOT).choose(view, moves)  # easy: heaviest tile
+            move = self.strong.choose(view, moves)
+        elif self.level == "medium":
+            move = self.bot.choose(view, moves)
+        else:
+            move = GreedyBot(BOT).choose(view, moves)  # easy: heaviest tile
+        return check_move(move, moves)   # exactly one of the legal moves, or IllegalMove
 
     def run_bot(self):
         """Let the bot play until it's your turn again or the game is over."""

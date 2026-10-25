@@ -31,8 +31,27 @@ docs can read it from the class without creating a bot.
 A bot never gets the Game itself, only `view`: what its seat is allowed to see (its own hand
 and everything public), built by Game.view(seat). The opponent's tiles and the boneyard aren't
 in it, so a bot can't cheat even if it tries.
+
+What choose returns is checked with check_move: it must be exactly one of the `moves` it was
+given. Anything else raises IllegalMove.
 """
 from abc import ABC, abstractmethod
+
+
+class IllegalMove(ValueError):
+    """A bot returned something that isn't one of the legal moves it was given."""
+
+
+def check_move(move, moves):
+    """Return `move` if it's exactly one of `moves`, otherwise raise IllegalMove.
+
+    Strict on purpose: the tile must be written as in `moves` ((6, 2), not (2, 6)), as a
+    (tile, side) tuple, with side "L" or "R". A bot that returns an element of `moves` can
+    never be wrong.
+    """
+    if not isinstance(move, tuple) or move not in moves:
+        raise IllegalMove(f"{move!r} is not one of the legal moves {moves}")
+    return move
 
 
 class Bot(ABC):
@@ -65,7 +84,7 @@ class Bot(ABC):
                 current_seat, history
         moves - every legal move, as (tile, side) with side "L" or "R"
 
-        Must return one of `moves`.
+        Must return exactly one of `moves`, as given (checked by check_move).
         """
 
     # --- optional -------------------------------------------------------------------------

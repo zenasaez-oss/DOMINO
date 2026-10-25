@@ -14,7 +14,7 @@ import random
 from multiprocessing import Pool
 
 from domino.board import board_ends
-from domino.bots import ExpertBot, GreedyBot, MonteCarloBot, ScoringBot
+from domino.bots import ExpertBot, GreedyBot, MonteCarloBot, ScoringBot, check_move
 from domino.game import Game
 from domino.player import Player
 
@@ -39,7 +39,7 @@ def play_game(names, seed, options=None):
         while True:
             moves = game.legal_moves(seat)
             if moves:
-                tile, side = bots[seat].choose(game.view(seat), moves)
+                tile, side = check_move(bots[seat].choose(game.view(seat), moves), moves)
                 game.play(seat, tile, side)
                 played = True
                 break
