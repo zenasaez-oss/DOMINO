@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "domino-game"
+version = "0.1.0"
+description = "Classic two-player domino: the rules engine, a public API for bots, and a referee."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Zena Saez" },
+    { name = "carlosjtabera-dev" },
+    { name = "santiagofernandezmarco" },
+]
+dependencies = []   # the game itself only uses the Python standard library
+
+[project.optional-dependencies]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+]
+
+[project.urls]
+Repository = "https://github.com/zenasaez-oss/DOMINO"
+Play = "https://zenasaez-oss.github.io/DOMINO/"
+
+[tool.setuptools.packages.find]
+include = ["domino*"]

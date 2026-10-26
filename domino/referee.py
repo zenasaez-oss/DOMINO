@@ -32,6 +32,10 @@ from .player import Player
 
 FAULTS = ("error", "illegal", "timeout")
 
+# The platform's rule: a bot may take at most this many seconds for each action (being created,
+# choosing a move, watching the opponent). The bot tests and the tournament use it.
+STANDARD_TIME_LIMIT = 5.0
+
 
 class BotFault(Exception):
     """A bot broke the rules. `reason` is one of FAULTS, `detail` says what happened."""
