@@ -288,6 +288,11 @@ class ExpertBot(Bot):
         return ("Reads the opponent's hand from their draws, passes and choices, learns their "
                 "playing style, and solves the last moves exactly.")
 
+    @classmethod
+    def create(cls, seat, seed=None, **options):
+        """Build it for one game; `seed` makes its imagined hands repeatable."""
+        return cls(seat, seed=seed, **options)
+
     def __init__(self, seat, time_limit=0.3, samples=None, sharpness=1.0, seed=None, prune=True,
                  global_opening=True, mimic=True, exact_yard=EXACT_YARD, budget=BUDGET, me_like_model=True,
                  memory=None):

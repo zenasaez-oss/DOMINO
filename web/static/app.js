@@ -10,7 +10,9 @@ const PY_FILES = [
   "domino/__init__.py", "domino/board.py", "domino/deck.py", "domino/domino.py",
   "domino/game.py", "domino/hand.py", "domino/player.py", "domino/rules.py",
   "domino/turn_manager.py",
-  "domino/bots/__init__.py", "domino/bots/base.py", "domino/bots/greedy.py", "domino/bots/scoring.py",
+  "domino/referee.py",
+  "domino/bots/__init__.py", "domino/bots/base.py", "domino/bots/registry.py",
+  "domino/bots/greedy.py", "domino/bots/scoring.py",
   "domino/bots/montecarlo.py", "domino/bots/expert.py",
   "web/__init__.py", "web/session.py",
 ];
@@ -504,6 +506,9 @@ function renderStatus() {
 
 // The history as short sentences: "Paco abre con 6-6", "Tú pones 3-4 a la derecha"...
 const pair = ([a, b]) => `${a}-${b}`;
+// why a bot lost by breaking the rules (the referee's reasons, domino/referee.py)
+const FAULT_NAME = { error: "un error", illegal: "una jugada ilegal", timeout: "tardar demasiado" };
+const isFault = (reason) => Object.hasOwn(FAULT_NAME, reason);
 
 function moveSentence(e, count) {
   const you = e.who === "you";
@@ -515,6 +520,7 @@ function moveSentence(e, count) {
     if (you) return `robas un ${pair(e.tile)}`;
     return count > 1 ? `roba ${count} fichas` : "roba una ficha";
   }
+  if (e.action === "forfeit") return `pierde por ${FAULT_NAME[e.reason] || "romper las reglas"}`;
   return you ? "pasas" : "pasa";
 }
 
@@ -552,6 +558,9 @@ function renderResult() {
   if (state.winner === null) {
     title = "¡Tablas!";
     text = "La partida se ha cerrado y los dos sumáis lo mismo.";
+  } else if (isFault(state.end_reason)) {
+    title = "¡Has ganado!";
+    text = `${character.name} ha perdido por ${FAULT_NAME[state.end_reason]}. Te llevas ${state.score} puntos.`;
   } else if (state.winner === YOU) {
     title = "¡Has ganado!";
     text = blocked ? "La partida se cerró y sumabas menos puntos." : `Te has quedado sin fichas antes que ${character.name}.`;

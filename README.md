@@ -24,7 +24,8 @@ The game itself is played on a separate platform; this repo is the rules engine 
 | `domino/rules.py` | What's legal, who starts, who wins |
 | `domino/turn_manager.py` | Whose turn it is, counting passes |
 | `domino/game.py` | `Game`: ties it all together for the platform |
-| `domino/bots/` | The bots you can play against: `GreedyBot` (easy), `ScoringBot` (medium), `MonteCarloBot` (hard), `ExpertBot` (superhard) |
+| `domino/bots/` | The bots: the `Bot` base class (`base.py`), automatic discovery (`registry.py`) and our four bots, `GreedyBot` (easy), `ScoringBot` (medium), `MonteCarloBot` (hard), `ExpertBot` (superhard) |
+| `domino/referee.py` | Plays games between bots; a bot that crashes, plays illegally or runs out of time loses |
 | `main.py` | Developer check: plays one random game and prints the result |
 | `tools/` | Developer tools only: terminal games against each bot (`play*.py`) and bot-vs-bot matches (`arena.py`) |
 | `tests/` | Unit tests |
@@ -74,9 +75,27 @@ class MyBot(Bot):
 
     def choose(self, view, moves):          # moves = every legal (tile, side)
         return max(moves, key=lambda m: sum(m[0]))
-
-tile, side = MyBot().choose(game.view(seat), game.legal_moves(seat))
 ```
+
+Save it as a file in `domino/bots/` and that's all: `find_bots()` finds every bot in that folder
+automatically, and reports any file that fails to import, any bot missing a required method and
+any two bots with the same name.
+
+`choose` must return exactly one of `moves`. The referee (`domino/referee.py`) plays games between
+bots and makes sure none can break them: a bot that crashes, answers with an illegal move or takes
+longer than the time limit loses that game on the spot, and the other bot wins.
+
+```python
+from domino.bots import find_bots
+from domino.referee import play_match
+
+bots = find_bots()                                   # {"Greedy": GreedyBot, ..., "My bot": MyBot}
+result = play_match(bots["My bot"], bots["Scoring"], seed=7, time_limit=1)
+result.winner, result.end_reason, result.fault       # e.g. 1, "illegal", {"seat": 0, ...}
+```
+
+The referee builds each bot with `MyBot.create(seat, seed)`. The same seed replays exactly the same
+game, so override `create` to pass the seed on if your bot uses randomness.
 
 ## Running
 
@@ -86,7 +105,7 @@ python -m tools.play                              # play against the easy bot in
 python -m tools.play_scoring                      # play against the medium (scoring) bot
 python -m tools.play_montecarlo                   # play against the hard (Monte Carlo) bot
 python -m tools.play_expert                       # play against the superhard (expert) bot
-python -m tools.arena montecarlo scoring -n 200   # bot against bot, win counts
+python -m tools.arena montecarlo scoring -n 200   # bot against bot, win counts (any bot in domino/bots/)
 python -m unittest discover -s tests -t .         # run the tests
 ```
 

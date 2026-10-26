@@ -55,7 +55,16 @@ def check_move(move, moves):
 
 
 class Bot(ABC):
-    """A domino bot. Inherit from it and implement the four abstract methods."""
+    """A domino bot. Inherit from it and implement the four abstract methods.
+
+    If your bot defines its own __init__, its first parameter must be the seat (0 or 1):
+    that's how create() builds it.
+    """
+
+    _display_name = None    # set by a tournament to tell copies apart; see `name`
+
+    def __init__(self, seat=0):
+        self.seat = seat
 
     # --- identity: readable without creating the bot ------------------------------------
     @classmethod
@@ -86,6 +95,35 @@ class Bot(ABC):
 
         Must return exactly one of `moves`, as given (checked by check_move).
         """
+
+    # --- construction: how the referee and the tournament build a bot ---------------------
+    @classmethod
+    def create(cls, seat, seed=None, **options):
+        """Build this bot for one game. This is the only way the referee creates a bot.
+
+        seat    - which seat it plays (0 or 1)
+        seed    - a number for the bot's own randomness, so a game can be replayed exactly
+                  (None: not seeded). A bot without randomness can ignore it, which is what
+                  this default does.
+        options - settings for this bot, e.g. samples=20 for the Monte Carlo bot
+
+        Override it if your bot uses randomness (pass `seed` on) or needs other settings.
+        """
+        return cls(seat, **options)
+
+    # --- display name ---------------------------------------------------------------------
+    @property
+    def name(self):
+        """The name shown for this particular bot: get_name(), unless a tournament renamed it
+        (e.g. "Greedy#2" when two copies of the same bot play each other)."""
+        return self._display_name if self._display_name is not None else self.get_name()
+
+    @name.setter
+    def name(self, value):
+        self._display_name = value
+
+    def __repr__(self):
+        return f"<{type(self).__name__} {self.name!r} seat={getattr(self, 'seat', None)}>"
 
     # --- optional -------------------------------------------------------------------------
     def observe_opponent_turn(self, ends, draws, played):

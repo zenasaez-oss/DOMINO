@@ -210,6 +210,11 @@ class MonteCarloBot(Bot):
         return ("Imagines many hands the opponent could hold, plays each move out to the end in "
                 "every one, and keeps the move that wins most; solves the endgame exactly.")
 
+    @classmethod
+    def create(cls, seat, seed=None, **options):
+        """Build it for one game; `seed` makes its imagined hands repeatable."""
+        return cls(seat, seed=seed, **options)
+
     def __init__(self, seat, samples=300, time_limit=None, seed=None, policy="light", margin=0.02, max_time=2.0):
         self.seat = seat
         self.opponent = 1 - seat

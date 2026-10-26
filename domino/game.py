@@ -72,7 +72,7 @@ class Game:
         self.turns = TurnManager(NUM_PLAYERS, first_seat)
         self.finished = False
         self.winner = None   # seat, or None if a blocked game ended in a tie
-        self.end_reason = None  # "domino" (someone went out) or "blocked"
+        self.end_reason = None  # "domino" (someone went out), "blocked", or a forfeit reason
         self.history = []    # public events, oldest first (see view)
 
     @classmethod
@@ -141,6 +141,7 @@ class Game:
                          {"seat": s, "action": "play", "tile": (a, b), "side": "L" or "R"}
                          {"seat": s, "action": "draw"}   (which tile was drawn stays secret)
                          {"seat": s, "action": "pass"}
+                         {"seat": s, "action": "forfeit", "reason": r}   (see forfeit)
         """
         return {
             "my_seat": seat,
@@ -187,6 +188,14 @@ class Game:
             self._finish(rules.blocked_winner(self.hands), "blocked")
         else:
             self.turns.next_turn()
+
+    def forfeit(self, seat, reason):
+        """`seat` loses on the spot. Used by the referee when a bot crashes ("error"), answers
+        with an illegal move ("illegal") or takes too long ("timeout")."""
+        if self.finished:
+            raise ValueError("the game is over")
+        self.history.append({"seat": seat, "action": "forfeit", "reason": reason})
+        self._finish(1 - seat, reason)
 
     # --- internals ---
     def _is_turn(self, seat):
