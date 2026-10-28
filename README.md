@@ -4,8 +4,9 @@ Game logic for classic domino (one line of play, two open ends), for 2 players.
 The game itself is played on a separate platform; this repo is the rules engine it calls.
 
 - **Play:** https://zenasaez-oss.github.io/DOMINO/
-- **Documentation**, including the API for bots and a tutorial to write your own: the `docs/`
-  folder, published on Read the Docs (`mkdocs serve` shows it locally).
+- **Documentation**, including the API for bots and a tutorial to write your own:
+  https://domino-game.readthedocs.io/en/latest/ (built from the `docs/` folder; `mkdocs serve`
+  shows it locally).
 
 ## Rules used
 
