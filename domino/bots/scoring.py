@@ -7,6 +7,7 @@ import random
 
 from ..board import LEFT, board_ends
 from ..domino import is_double, pip_count
+from .base import Bot
 
 NUMBERS_PER_SET = 7  # in a double-six set every number appears on 7 tiles
 
@@ -21,12 +22,25 @@ def ends_after(board, tile, side):
     return left, (tile[1] if tile[0] == right else tile[0])
 
 
-class ScoringBot:
+class ScoringBot(Bot):
     """Scores every legal move and plays the best one.
 
     It only uses what any player at the table can see: the board, its own hand,
     how many tiles the opponent holds, and when the opponent draws or passes.
     """
+
+    @classmethod
+    def get_name(cls):
+        return "Scoring"
+
+    @classmethod
+    def get_authors(cls):
+        return ["Zena Saez"]
+
+    @classmethod
+    def get_description(cls):
+        return ("Scores every legal move on weight, doubles, keeping tiles that fit and blocking "
+                "numbers the opponent lacks, then plays the best one.")
 
     def __init__(self, seat):
         self.seat = seat
@@ -52,18 +66,19 @@ class ScoringBot:
             self.opponent_lacks |= set(ends)
         # Played without drawing: nothing learned, and nothing they already lacked changes.
 
-    def choose(self, game, moves):
-        hand = game.players[self.seat].hand
-        opp_tiles = len(game.players[self.opponent].hand)
+    def choose(self, view, moves):
+        hand = view["my_hand"]
+        board = view["board"]
+        opp_tiles = view["opponent_tiles"]
 
         def unseen(rest, n):
             """How many tiles with `n` we haven't seen (not on the board, not in our hand)."""
-            return NUMBERS_PER_SET - sum(n in t for t in game.board) - sum(n in t for t in rest)
+            return NUMBERS_PER_SET - sum(n in t for t in board) - sum(n in t for t in rest)
 
         def score(move):
             tile, side = move
             rest = [t for t in hand if t != tile]
-            new_ends = set(ends_after(game.board, tile, side))
+            new_ends = set(ends_after(board, tile, side))
 
             s = pip_count(tile)                                   # weight
             if is_double(tile):

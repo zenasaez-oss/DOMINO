@@ -1,0 +1,56 @@
+site_name: Domino
+site_description: Classic two-player domino — play against a bot, or write your own bot.
+repo_url: https://github.com/zenasaez-oss/DOMINO
+repo_name: zenasaez-oss/DOMINO
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - scheme: slate
+      primary: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Rules: rules.md
+  - How it works: architecture.md
+  - Bots:
+      - Our bots: bots.md
+      - "Tutorial: write your first bot": tutorial.md
+      - What a bot sees and returns: contract.md
+  - API reference: api.md
+  - Development: development.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            show_root_heading: true
+            show_source: false
+            members_order: source
+            docstring_style: google
+            show_signature_annotations: true
+            separate_signature: true

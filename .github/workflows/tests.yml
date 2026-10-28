@@ -1,0 +1,32 @@
+# Runs every test on every pull request (and on main), so a broken game change or a bot that
+# breaks the rules shows a red cross on its pull request before anyone merges it.
+# tests/test_all_bots.py checks every bot in domino/bots/ automatically, including new ones.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 is the Python the website runs in the browser (Pyodide 0.27)
+        python-version: ["3.12", "3.13"]
+    name: Tests (Python ${{ matrix.python-version }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run all tests, including the checks every bot must pass
+        run: python -m unittest discover -s tests -t . -v

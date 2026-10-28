@@ -16,31 +16,16 @@ def mask(*ts):
     return sum(BIT[INDEX[t]] for t in ts)
 
 
-class FogGame:
-    """Shows a bot nothing but game.state(for_seat): no other attribute of the real game."""
-
-    def __init__(self, game):
-        self._game = game
-        self.state_calls = []
-
-    def state(self, for_seat=None):
-        self.state_calls.append(for_seat)
-        return self._game.state(for_seat=for_seat)
-
-    def __getattr__(self, name):
-        raise AssertionError(f"the bot looked at game.{name}")
-
-
-def play_full_game(bot_seat, bot, rng, fog=True):
-    """Bot against a random legal player. Returns the finished game."""
+def play_full_game(bot_seat, bot, rng):
+    """Bot against a random legal player. Returns the finished game. The bot only ever gets
+    game.view(its seat), never the game itself."""
     game = Game([Player(id="0", name="a"), Player(id="1", name="b")])
-    view = FogGame(game) if fog else game
     while not game.finished:
         seat = game.current_seat
         moves = game.legal_moves(seat)
         if moves:
             if seat == bot_seat:
-                move = bot.choose(view, moves)
+                move = bot.choose(game.view(seat), moves)
                 if move not in moves:
                     raise AssertionError(f"bot returned {move}, not one of {moves}")
             else:
@@ -151,7 +136,7 @@ class TestBot(unittest.TestCase):
         self.assertEqual(ends_after((1, 3), (1, 4), "L"), (4, 3))
         self.assertEqual(ends_after((2, 2), (2, 2), "L"), (2, 2))
 
-    def test_always_legal_and_only_reads_state(self):
+    def test_always_legal(self):
         rng = random.Random(11)
         for seed in range(12):
             random.seed(seed)
@@ -159,15 +144,6 @@ class TestBot(unittest.TestCase):
             bot = MonteCarloBot(bot_seat, samples=12, seed=seed)
             game = play_full_game(bot_seat, bot, rng)
             self.assertTrue(game.finished)
-
-    def test_only_asks_for_its_own_seat(self):
-        random.seed(3)
-        game = Game([Player(id="0", name="a"), Player(id="1", name="b")])
-        bot = MonteCarloBot(game.current_seat, samples=5, seed=1)
-        view = FogGame(game)
-        moves = game.legal_moves(game.current_seat)
-        bot.choose(view, moves)
-        self.assertEqual(set(view.state_calls), {game.current_seat})
 
     def test_never_sees_the_opponent_hand(self):
         """Changing the opponent's hidden tiles (same counts) cannot change what the bot plays."""
@@ -180,7 +156,7 @@ class TestBot(unittest.TestCase):
         moves = game.legal_moves(seat)
         if len(moves) < 2:
             self.skipTest("this deal has no choice to make")
-        pick_a = MonteCarloBot(seat, samples=30, seed=9).choose(FogGame(game), moves)
+        pick_a = MonteCarloBot(seat, samples=30, seed=9).choose(game.view(seat), moves)
         other = 1 - seat
         mine = set(game.players[seat].hand)
         unseen = [t for t in INDEX if t not in mine and t not in {tuple(sorted(b)) for b in game.board}]
@@ -188,7 +164,7 @@ class TestBot(unittest.TestCase):
         n = len(game.players[other].hand)
         game.players[other].hand = unseen[:n]
         game.boneyard = unseen[n:]
-        pick_b = MonteCarloBot(seat, samples=30, seed=9).choose(FogGame(game), moves)
+        pick_b = MonteCarloBot(seat, samples=30, seed=9).choose(game.view(seat), moves)
         self.assertEqual(pick_a, pick_b)
 
     def test_forced_move_is_returned_without_thinking(self):
@@ -197,7 +173,7 @@ class TestBot(unittest.TestCase):
         bot = MonteCarloBot(game.current_seat, samples=1000000)   # would take forever if it searched
         moves = game.legal_moves(game.current_seat)
         self.assertEqual(len(moves), 1)
-        self.assertEqual(bot.choose(FogGame(game), moves), moves[0])
+        self.assertEqual(bot.choose(game.view(game.current_seat), moves), moves[0])
 
     def test_same_seed_same_game(self):
         def run():

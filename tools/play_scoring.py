@@ -6,7 +6,7 @@ domino/bots/scoring.py. The other play_* tools reuse bot_turn and your_turn from
 Run from the project folder:  python -m tools.play_scoring
 """
 from domino.board import board_ends
-from domino.bots import ScoringBot
+from domino.bots import ScoringBot, check_move
 from domino.game import Game
 from domino.player import Player
 from tools.play import show_board, tile_str
@@ -18,7 +18,7 @@ def bot_turn(game, bot):
     while True:
         moves = game.legal_moves(BOT)
         if moves:
-            tile, side = bot.choose(game, moves)
+            tile, side = check_move(bot.choose(game.view(BOT), moves), moves)
             game.play(BOT, tile, side)
             print(f"Bot plays {tile_str(tile)} on the {'left' if side == 'L' else 'right'}")
             return

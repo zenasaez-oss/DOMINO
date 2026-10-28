@@ -72,7 +72,8 @@ class Game:
         self.turns = TurnManager(NUM_PLAYERS, first_seat)
         self.finished = False
         self.winner = None   # seat, or None if a blocked game ended in a tie
-        self.end_reason = None  # "domino" (someone went out) or "blocked"
+        self.end_reason = None  # "domino" (someone went out), "blocked", or a forfeit reason
+        self.history = []    # public events, oldest first (see view)
 
     @classmethod
     def quick_start(cls):
@@ -122,6 +123,37 @@ class Game:
                      if self.finished and self.winner is not None else None,
         }
 
+    def view(self, seat):
+        """What `seat` is allowed to see: its own hand plus everything public. This is the only
+        thing a bot is given.
+
+        The opponent's tiles and the boneyard's tiles are not in it, so a bot can't read them,
+        and it's a fresh copy, so changing it doesn't change the game.
+
+        my_seat        - the seat this view is for (0 or 1)
+        my_hand        - its own tiles
+        board          - the tiles on the table, left to right, oriented so neighbours match
+        ends           - the two open numbers, (left, right), or None on an empty board
+        opponent_tiles - how many tiles the opponent holds (not which)
+        boneyard_size  - how many tiles are left to draw (not which)
+        current_seat   - whose turn it is
+        history        - public events, oldest first:
+                         {"seat": s, "action": "play", "tile": (a, b), "side": "L" or "R"}
+                         {"seat": s, "action": "draw"}   (which tile was drawn stays secret)
+                         {"seat": s, "action": "pass"}
+                         {"seat": s, "action": "forfeit", "reason": r}   (see forfeit)
+        """
+        return {
+            "my_seat": seat,
+            "my_hand": list(self.players[seat].hand),
+            "board": list(self.board),
+            "ends": rules.board_ends(self.board),
+            "opponent_tiles": len(self.players[1 - seat].hand),
+            "boneyard_size": len(self.boneyard),
+            "current_seat": self.current_seat,
+            "history": [dict(event) for event in self.history],
+        }
+
     # --- actions ---
     def play(self, seat, tile, side):
         self._check_turn(seat)
@@ -129,6 +161,7 @@ class Game:
         if not self.board and tile != self.opening_tile:
             raise ValueError(f"the game must open with {self.opening_tile}")
         play_move(self.players[seat].hand, self.board, tile, side)
+        self.history.append({"seat": seat, "action": "play", "tile": tile, "side": side})
         self.turns.record_play()
 
         if rules.has_won(self.players[seat].hand):
@@ -141,17 +174,28 @@ class Game:
         self._check_turn(seat)
         if not self.can_draw(seat):
             raise ValueError("you can only draw when you have no legal move and the boneyard isn't empty")
-        return draw_tile(self.players[seat].hand, self.boneyard)
+        tile = draw_tile(self.players[seat].hand, self.boneyard)
+        self.history.append({"seat": seat, "action": "draw"})   # no tile: what was drawn is secret
+        return tile
 
     def pass_turn(self, seat):
         self._check_turn(seat)
         if not self.can_pass(seat):
             raise ValueError("you can only pass when you have no legal move and the boneyard is empty")
+        self.history.append({"seat": seat, "action": "pass"})
         self.turns.record_pass()
         if self.turns.everyone_passed():
             self._finish(rules.blocked_winner(self.hands), "blocked")
         else:
             self.turns.next_turn()
+
+    def forfeit(self, seat, reason):
+        """`seat` loses on the spot. Used by the referee when a bot crashes ("error"), answers
+        with an illegal move ("illegal") or takes too long ("timeout")."""
+        if self.finished:
+            raise ValueError("the game is over")
+        self.history.append({"seat": seat, "action": "forfeit", "reason": reason})
+        self._finish(1 - seat, reason)
 
     # --- internals ---
     def _is_turn(self, seat):

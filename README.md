@@ -3,6 +3,10 @@
 Game logic for classic domino (one line of play, two open ends), for 2 players.
 The game itself is played on a separate platform; this repo is the rules engine it calls.
 
+- **Play:** https://zenasaez-oss.github.io/DOMINO/
+- **Documentation**, including the API for bots and a tutorial to write your own: the `docs/`
+  folder, published on Read the Docs (`mkdocs serve` shows it locally).
+
 ## Rules used
 
 - Double-six set (28 tiles), 7 tiles per player, 14 left in the boneyard.
@@ -24,7 +28,8 @@ The game itself is played on a separate platform; this repo is the rules engine 
 | `domino/rules.py` | What's legal, who starts, who wins |
 | `domino/turn_manager.py` | Whose turn it is, counting passes |
 | `domino/game.py` | `Game`: ties it all together for the platform |
-| `domino/bots/` | The bots you can play against: `GreedyBot` (easy), `ScoringBot` (medium), `MonteCarloBot` (hard), `ExpertBot` (superhard) |
+| `domino/bots/` | The bots: the `Bot` base class (`base.py`), automatic discovery (`registry.py`) and our four bots, `GreedyBot` (easy), `ScoringBot` (medium), `MonteCarloBot` (hard), `ExpertBot` (superhard) |
+| `domino/referee.py` | Plays games between bots; a bot that crashes, plays illegally or runs out of time loses |
 | `main.py` | Developer check: plays one random game and prints the result |
 | `tools/` | Developer tools only: terminal games against each bot (`play*.py`) and bot-vs-bot matches (`arena.py`) |
 | `tests/` | Unit tests |
@@ -45,6 +50,57 @@ game.state(for_seat=1)          # board, whose turn, my hand, my moves, winner .
 
 Illegal actions raise `ValueError` and leave the game unchanged.
 
+## Bots
+
+Every bot inherits from `Bot` (`domino/bots/base.py`) and implements four methods: who it
+is (`get_name`, `get_authors`, `get_description`) and how it plays (`choose`). A bot that
+forgets one is refused as soon as it's created.
+
+A bot never gets the game itself. On its turn it gets `game.view(seat)`: its own hand plus
+everything public (board, ends, how many tiles the opponent holds, how many are left to draw,
+and the history of plays, draws and passes). The opponent's tiles and the boneyard aren't in
+it, so a bot can't cheat even if it tries.
+
+```python
+from domino.bots import Bot
+
+class MyBot(Bot):
+    @classmethod
+    def get_name(cls):
+        return "My bot"
+
+    @classmethod
+    def get_authors(cls):
+        return ["Your name"]
+
+    @classmethod
+    def get_description(cls):
+        return "Plays its heaviest tile."
+
+    def choose(self, view, moves):          # moves = every legal (tile, side)
+        return max(moves, key=lambda m: sum(m[0]))
+```
+
+Save it as a file in `domino/bots/` and that's all: `find_bots()` finds every bot in that folder
+automatically, and reports any file that fails to import, any bot missing a required method and
+any two bots with the same name.
+
+`choose` must return exactly one of `moves`. The referee (`domino/referee.py`) plays games between
+bots and makes sure none can break them: a bot that crashes, answers with an illegal move or takes
+longer than the time limit loses that game on the spot, and the other bot wins.
+
+```python
+from domino.bots import find_bots
+from domino.referee import play_match
+
+bots = find_bots()                                   # {"Greedy": GreedyBot, ..., "My bot": MyBot}
+result = play_match(bots["My bot"], bots["Scoring"], seed=7, time_limit=1)
+result.winner, result.end_reason, result.fault       # e.g. 1, "illegal", {"seat": 0, ...}
+```
+
+The referee builds each bot with `MyBot.create(seat, seed)`. The same seed replays exactly the same
+game, so override `create` to pass the seed on if your bot uses randomness.
+
 ## Running
 
 ```
@@ -53,7 +109,7 @@ python -m tools.play                              # play against the easy bot in
 python -m tools.play_scoring                      # play against the medium (scoring) bot
 python -m tools.play_montecarlo                   # play against the hard (Monte Carlo) bot
 python -m tools.play_expert                       # play against the superhard (expert) bot
-python -m tools.arena montecarlo scoring -n 200   # bot against bot, win counts
+python -m tools.arena montecarlo scoring -n 200   # bot against bot, win counts (any bot in domino/bots/)
 python -m unittest discover -s tests -t .         # run the tests
 ```
 
@@ -80,8 +136,8 @@ Try it on your computer, from the project folder:
 
 ## The Monte Carlo bot
 
-`MonteCarloBot` (in `domino/bots/montecarlo.py`) is the hard bot. It only reads
-`game.state(for_seat=its_seat)`, i.e. what any player at the table can see, and it works out what the
+`MonteCarloBot` (in `domino/bots/montecarlo.py`) is the hard bot. Like every bot it only gets
+its view (`game.view(its_seat)`), i.e. what any player at the table can see, and it works out what the
 opponent's turns reveal by itself (drawing or passing means they held no tile with the open ends).
 
 For each move it deals the opponent many possible hands that fit what has been seen, plays the rest of
@@ -93,7 +149,7 @@ from domino.bots import MonteCarloBot
 
 bot = MonteCarloBot(seat=1)                       # samples=300 hands per decision by default
 bot = MonteCarloBot(seat=1, time_limit=0.5)       # or: think for 0.5 s per decision
-tile, side = bot.choose(game, game.legal_moves(1))
+tile, side = bot.choose(game.view(1), game.legal_moves(1))
 ```
 
 Measured with `python -m tools.arena` (games alternate seats; win rate of the first bot):
@@ -109,7 +165,7 @@ repeating the measurement gives a few points of difference either way.
 
 ## The expert bot
 
-`ExpertBot` (`domino/bots/expert.py`) only reads `game.state(for_seat=its_seat)`, what any
+`ExpertBot` (`domino/bots/expert.py`) only gets its view (`game.view(its_seat)`), what any
 player at the table can see, and works out the opponent's tiles from more than their draws
 and passes:
 
@@ -147,6 +203,6 @@ from domino.bots import ExpertBot
 
 bot = ExpertBot(seat=1)                         # thinks 0.3 s per decision by default
 bot = ExpertBot(seat=1, time_limit=0.6)         # or longer
-tile, side = bot.choose(game, game.legal_moves(1))
+tile, side = bot.choose(game.view(1), game.legal_moves(1))
 bot.style_odds()                                # {'montecarlo': 0.7, 'scoring': 0.2, ...}
 ```

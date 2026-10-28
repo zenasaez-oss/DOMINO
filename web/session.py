@@ -23,6 +23,7 @@ from domino.bots import LEVELS, ExpertBot, GreedyBot, MonteCarloBot, ScoringBot
 from domino.game import Game
 from domino.hand import highest_double, highest_tile
 from domino.player import Player
+from domino.referee import BotFault, ask_bot
 
 YOU, BOT = 0, 1
 BOT_LEVELS = tuple(LEVELS)
@@ -85,11 +86,16 @@ class Session:
 
     # --- bot's turn ---
     def bot_choice(self, moves):
+        """The bot's move, asked through the referee: the bot only sees its view, and if it
+        crashes or answers with an illegal move, BotFault is raised (no time limit here:
+        Python in the browser can't run the referee's clock)."""
         if self.strong is not None:
-            return self.strong.choose(self.game, moves)
-        if self.level == "medium":
-            return self.bot.choose(self.game, moves)
-        return GreedyBot(BOT).choose(self.game, moves)  # easy: heaviest tile
+            bot = self.strong
+        elif self.level == "medium":
+            bot = self.bot
+        else:
+            bot = GreedyBot(BOT)                       # easy: heaviest tile
+        return ask_bot(bot, BOT, self.game.view(BOT), moves)
 
     def run_bot(self):
         """Let the bot play until it's your turn again or the game is over."""
@@ -98,7 +104,13 @@ class Session:
         while not game.finished and game.current_seat == BOT:
             moves = game.legal_moves(BOT)
             if moves:
-                tile, side = self.bot_choice(moves)
+                try:
+                    tile, side = self.bot_choice(moves)
+                except BotFault as fault:             # the bot broke the rules: it loses, you win
+                    game.forfeit(BOT, fault.reason)
+                    turn.append({"who": "bot", "action": "forfeit", "reason": fault.reason,
+                                 "detail": fault.detail})
+                    break
                 opening = not game.board
                 game.play(BOT, tile, side)
                 turn.append({"who": "bot", "action": "play", "tile": tile, "side": side, "opening": opening})

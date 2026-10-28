@@ -5,7 +5,7 @@ domino/bots/greedy.py.
 
 Run from the project folder:  python -m tools.play
 """
-from domino.bots import GreedyBot
+from domino.bots import GreedyBot, check_move
 from domino.game import Game
 from domino.player import Player
 
@@ -27,7 +27,7 @@ def bot_turn(game):
     while True:
         moves = game.legal_moves(BOT)
         if moves:
-            tile, side = GreedyBot(BOT).choose(game, moves)
+            tile, side = check_move(GreedyBot(BOT).choose(game.view(BOT), moves), moves)
             game.play(BOT, tile, side)
             print(f"Bot plays {tile_str(tile)} on the {'left' if side == 'L' else 'right'}")
             return

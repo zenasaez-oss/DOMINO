@@ -4,3 +4,7 @@ __pycache__/
 venv/
 .pytest_cache/
 .vscode/
+build/
+dist/
+*.egg-info/
+site/
