@@ -140,7 +140,7 @@ class TestWhatABotMustReturn(unittest.TestCase):
                         break
                 else:
                     self.skipTest("the bot never opened")
-                session.current.strong = bot
+                session.current.bot = bot
                 reply = json.loads(session.bot_turn())
                 self.assertNotIn("error", reply)          # no stuck page: the game goes on to its end
                 self.assertTrue(reply["finished"])

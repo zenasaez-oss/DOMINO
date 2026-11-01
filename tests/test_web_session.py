@@ -1,7 +1,9 @@
 import json
 import random
 import unittest
+from unittest.mock import patch
 
+from domino.bots import LEVELS, GreedyBot, scan
 from web import session
 from web.session import BOT, YOU, Session
 
@@ -103,14 +105,96 @@ class TestSession(unittest.TestCase):
         think, session.SUPER_THINK = session.SUPER_THINK, 0.01
         try:
             play_random_game("superhard")
-            first = session.current.strong
+            first = session.current.bot
             play_random_game("superhard")
-            self.assertIs(session.current.strong.style_evidence, first.style_evidence)
+            self.assertIs(session.current.bot.style_evidence, first.style_evidence)
         finally:
             session.SUPER_THINK = think
 
     def test_unknown_level_is_an_error(self):
         self.assertIn("error", json.loads(session.new_game("impossible")))
+
+
+class TestEveryBotOnThePage(unittest.TestCase):
+    def test_every_bot_in_the_folder_is_listed(self):
+        listed = json.loads(session.list_bots())
+        found, _ = scan()
+        self.assertEqual({b["id"] for b in listed["bots"]}, set(found))
+        for bot in listed["bots"]:
+            self.assertTrue(bot["name"] and bot["authors"] and bot["description"])
+
+    def test_our_four_come_first_with_their_characters(self):
+        bots = json.loads(session.list_bots())["bots"]
+        self.assertEqual([b["character"] for b in bots[:4]], list(LEVELS))
+        self.assertTrue(all(b["character"] is None for b in bots[4:]))
+
+    def test_a_game_can_be_played_against_any_bot_by_name(self):
+        name = LEVELS["medium"].get_name()
+        state = play_random_game(name)
+        self.assertTrue(state["finished"])
+        self.assertEqual(state["bot"], name)
+        self.assertEqual(state["character"], "medium")
+
+    def test_a_bot_without_a_character_can_be_played(self):
+        class Plain(GreedyBot):
+            @classmethod
+            def get_name(cls):
+                return "Plain"
+
+        with patch.object(session, "scan", return_value=({"Plain": Plain}, [])):
+            state = play_random_game("Plain")
+        self.assertTrue(state["finished"])
+        self.assertIsNone(state["character"])
+        self.assertEqual(state["players"][BOT]["name"], "Plain")
+
+    def test_the_chosen_bot_hears_about_your_turns(self):
+        heard = []
+
+        class Listener(GreedyBot):
+            @classmethod
+            def get_name(cls):
+                return "Listener"
+
+            def observe_opponent_turn(self, ends, draws, played):
+                heard.append(played)
+
+        with patch.object(session, "scan", return_value=({"Listener": Listener}, [])):
+            play_random_game("Listener")
+        self.assertTrue(heard)
+
+    def test_a_bot_that_cannot_be_built_loses_at_once(self):
+        class Broken(GreedyBot):
+            @classmethod
+            def get_name(cls):
+                return "Broken"
+
+            def __init__(self, seat):
+                raise RuntimeError("missing file")
+
+        with patch.object(session, "scan", return_value=({"Broken": Broken}, [])):
+            state = json.loads(session.new_game("Broken"))
+        self.assertTrue(state["finished"])
+        self.assertEqual(state["winner"], YOU)
+        self.assertEqual(state["end_reason"], "error")
+        self.assertEqual(state["bot_turn"][-1]["action"], "forfeit")
+
+
+class TestTournamentOnThePage(unittest.TestCase):
+    def test_a_tournament_plays_one_game_per_step(self):
+        names = [LEVELS["easy"].get_name(), LEVELS["medium"].get_name()]
+        state = json.loads(session.tournament_start(json.dumps(names), 2, 7))
+        self.assertEqual((state["played"], state["total"]), (0, 2))
+        state = json.loads(session.tournament_step())
+        self.assertEqual(state["played"], 1)
+        state = json.loads(session.tournament_step())
+        self.assertTrue(state["finished"])
+        self.assertEqual(sum(row["played"] for row in state["table"]), 4)
+        again = json.loads(session.tournament_step())      # nothing left to play
+        self.assertEqual(again["played"], 2)
+
+    def test_one_bot_is_not_a_tournament(self):
+        reply = json.loads(session.tournament_start(json.dumps([LEVELS["easy"].get_name()])))
+        self.assertIn("error", reply)
 
 
 if __name__ == "__main__":

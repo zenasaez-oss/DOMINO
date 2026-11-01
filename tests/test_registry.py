@@ -72,9 +72,10 @@ class BotFolder:
 
 class TestOurBots(unittest.TestCase):
     def test_all_four_of_our_bots_are_found(self):
+        # other teams' bots may be in the folder too, so these four are a part of what's found
         found = find_bots()
-        self.assertEqual(set(found.values()), set(LEVELS.values()))
-        self.assertEqual(set(found), {"Greedy", "Scoring", "Monte Carlo", "Expert"})
+        self.assertLessEqual(set(LEVELS.values()), set(found.values()))
+        self.assertLessEqual({"Greedy", "Scoring", "Monte Carlo", "Expert"}, set(found))
 
     def test_no_problems_in_our_folder(self):
         self.assertEqual(scan()[1], [])

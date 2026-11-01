@@ -125,7 +125,9 @@ def play_match(bot_a, bot_b, seed=0, time_limit=None, options=({}, {})):
     """
     random.seed(seed)
     game = Game([Player(id=str(seat), name=f"seat {seat}", is_bot=True) for seat in (0, 1)])
-    bot_seeds = random.Random(seed).sample(range(2 ** 31), 2)
+    # (randrange, not sample(range(2 ** 31)): that range is too long for 32-bit Python, as in the browser)
+    seeds = random.Random(seed)
+    bot_seeds = [seeds.randrange(2 ** 31) for _ in range(2)]
     bots, fault = [None, None], None
 
     try:

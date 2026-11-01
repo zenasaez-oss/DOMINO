@@ -29,6 +29,7 @@ nav:
       - Our bots: bots.md
       - "Tutorial: write your first bot": tutorial.md
       - What a bot sees and returns: contract.md
+  - Tournament and ranking: tournament.md
   - API reference: api.md
   - Development: development.md
 

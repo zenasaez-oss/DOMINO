@@ -15,7 +15,8 @@ Classic two-player domino: one line of tiles with two open ends, played with a d
 | The game (`domino/`) | The rules engine, as an installable Python library. A full game can be played from code, with no interface |
 | The bots (`domino/bots/`) | Four bots, from easy to superhard, and the `Bot` class every bot is built on |
 | The referee (`domino/referee.py`) | Plays games between bots and makes sure none can break them |
-| The website (`web/`) | A page where a person plays a full game against a bot. It runs the same Python engine in the browser |
+| The tournament (`domino/tournament.py`) | Every bot against every other; the [published ranking](tournament.md) is updated on every change |
+| The website (`web/`) | Play against any bot, run a tournament, see the ranking. It runs the same Python engine in the browser |
 
 ## Quick start
 

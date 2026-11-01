@@ -1,6 +1,8 @@
 # Publishes the web page on GitHub Pages every time main changes.
 # The page (web/) loads the Python engine (domino/, bots included) in the browser,
 # so both folders are published together. tools/ is for developers only and isn't published.
+# Two files are made here for the page: bots.json (the files in domino/bots/, so every bot
+# shows up on its own) and ranking.json (the official tournament, shown on the Ranking page).
 # One-time setup on GitHub: Settings -> Pages -> Source: "GitHub Actions".
 name: Publish web
 
@@ -21,6 +23,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30            # a bot that hangs can't keep the job running forever
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -37,6 +40,11 @@ jobs:
           find _site -name "__pycache__" -prune -exec rm -rf {} +
           # the site's address opens the game directly
           echo '<meta http-equiv="refresh" content="0; url=web/">' > _site/index.html
+          # every bot file, for the page to load (it can't list a folder on its own)
+          python -c "import json, pathlib; print(json.dumps(sorted(p.name for p in pathlib.Path('domino/bots').glob('*.py'))))" > _site/web/bots.json
+
+      - name: Play the tournament for the ranking
+        run: python -m tools.tournament --games 50 --jobs 4 --out _site/web/ranking.json
 
       - uses: actions/upload-pages-artifact@v3
         with:

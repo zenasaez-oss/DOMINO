@@ -5,21 +5,20 @@
 
 const $ = (id) => document.getElementById(id);
 
-// Python files the page loads into Pyodide, relative to this page
+// Python files the page loads into Pyodide, relative to this page. The bots aren't listed
+// here: every file in domino/bots/ is loaded (botFiles), so a new bot needs no change here.
 const PY_FILES = [
   "domino/__init__.py", "domino/board.py", "domino/deck.py", "domino/domino.py",
   "domino/game.py", "domino/hand.py", "domino/player.py", "domino/rules.py",
   "domino/turn_manager.py",
-  "domino/referee.py",
-  "domino/bots/__init__.py", "domino/bots/base.py", "domino/bots/registry.py",
-  "domino/bots/greedy.py", "domino/bots/scoring.py",
-  "domino/bots/montecarlo.py", "domino/bots/expert.py",
+  "domino/referee.py", "domino/tournament.py",
   "web/__init__.py", "web/session.py",
 ];
 // the page lives in web/, the packages next to it (a page can set its own PY_ROOT)
 const PY_ROOT = window.PY_ROOT || "../";
 
 let session = null;     // the web.session Python module
+let bots = [];          // every bot that loaded: {id, name, authors, description, character}
 
 // Which of the 9 cells (0-8) of a 3x3 grid hold a dot, for 0..6
 const PIPS = {
@@ -30,11 +29,13 @@ const SIDE_NAME = { L: "izquierda", R: "derecha" };
 const YOU = 0, BOT = 1;
 const THINK_MS = [900, 1700];   // how long the character seems to think before a move
 
-// Who you play against: one character per level, each with their own way of talking.
+// Who you play against: one character for each of our four bots, each with their own way of
+// talking, and the Stranger (guest) for any other bot, who takes that bot's name.
 // In what they say, {t} is a tile and {n} a number of tiles.
 const CHARACTERS = {
   easy: {
     name: "Paquito",
+    level: "fácil",
     think: "Mmm",
     says: {
       youOpen: ["¡Tú pimero! Con el {t}."],
@@ -54,6 +55,7 @@ const CHARACTERS = {
   },
   medium: {
     name: "Rosa",
+    level: "medio",
     think: "Déjame pensar, mi arma",
     says: {
       youOpen: ["Venga, mi arma, sales tú con el {t}.", "Te toca abrir con el {t}, cielo."],
@@ -73,6 +75,7 @@ const CHARACTERS = {
   },
   hard: {
     name: "Paco",
+    level: "difícil",
     think: "Mmm, déjame pensar",
     says: {
       youOpen: ["Venga, chaval, sales tú con el {t}.", "Te toca abrir con el {t}. Sin prisa, que no hay prisa."],
@@ -93,6 +96,7 @@ const CHARACTERS = {
   },
   superhard: {
     name: "C06",
+    level: "experto",
     think: "CALCULANDO",
     thinkMs: [200, 500],   // it really thinks for 1.5 s on top of this (web/session.py)
     says: {
@@ -111,8 +115,27 @@ const CHARACTERS = {
       tie: ["TABLAS. SOLICITO REVANCHA."],
     },
   },
+  guest: {
+    name: "Forastero",           // replaced by the bot's own name
+    think: "Hmm",
+    says: {
+      youOpen: ["Adelante. Abres tú con el {t}."],
+      play: ["El {t}.", "Pongo el {t}. Sin prisa.", "{t}. Te toca."],
+      open: ["Abro yo. El {t}."],
+      lastTile: ["El {t}. Me queda una."],
+      drawPlay: ["Robo {n}… y el {t}."],
+      drawPass: ["Robo {n}. Nada. Paso."],
+      pass: ["Paso."],
+      youDraw: ["Al pozo, amigo.", "Roba, roba."],
+      botWins: ["Dominó. Buena partida.", "Dominó. Otra vez será."],
+      botWinsBlocked: ["Cerrada. Gano por puntos."],
+      youWin: ["Bien jugado. Me quito el sombrero.", "Tú ganas. Por esta vez."],
+      youWinBlocked: ["Cerrada, y ganas por puntos. Bien."],
+      tie: ["Tablas. ¿Otra?"],
+    },
+  },
 };
-let level = "hard";
+let level = "hard";             // which drawing is at the table (a key of CHARACTERS)
 let character = CHARACTERS[level];
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
@@ -127,12 +150,28 @@ let counted = false;          // this game's result is already in the scoreboard
 let wins = loadWins();
 
 // --- talking to the Python engine ---
+// Every .py file in domino/bots/. The published site has a list of them, written when the site
+// is built (.github/workflows/pages.yml); on your computer, python -m http.server shows the folder.
+async function botFiles() {
+  let names = null;
+  try {
+    const res = await fetch("bots.json", { cache: "no-cache" });
+    if (res.ok) names = await res.json();
+  } catch (e) { /* no list: read the folder instead */ }
+  if (!names) {
+    const res = await fetch(PY_ROOT + "domino/bots/", { cache: "no-cache" });
+    if (!res.ok) throw new Error("No se encuentran los bots");
+    names = [...(await res.text()).matchAll(/href="(\w+\.py)"/g)].map((m) => m[1]);
+  }
+  return [...new Set(names)].map((name) => `domino/bots/${name}`);
+}
+
 async function loadEngine() {
   // a page can pass its own Pyodide options (e.g. where to find Python's standard library)
   const options = window.pyodideOptions ? await window.pyodideOptions() : {};
-  const pyodide = await loadPyodide(options);
+  const [pyodide, botPaths] = await Promise.all([loadPyodide(options), botFiles()]);
   const home = "/home/pyodide/";  // Pyodide's working folder, already on Python's import path
-  for (const path of PY_FILES) {
+  for (const path of [...PY_FILES, ...botPaths]) {
     const res = await fetch(PY_ROOT + path, { cache: "no-cache" });  // always the latest version
     if (!res.ok) throw new Error(`No se pudo cargar ${path}`);
     pyodide.FS.mkdirTree(home + path.slice(0, path.lastIndexOf("/")));
@@ -157,10 +196,13 @@ function face() {
   return $(`char-${level}`);
 }
 
-function seatCharacter(chosen) {
-  level = chosen;
-  character = CHARACTERS[level];
+// Seat the bot with this id: its own character if it's one of ours, the Stranger otherwise
+function seatCharacter(id) {
+  const bot = bots.find((b) => b.id === id) || { name: id, character: null };
+  level = bot.character || "guest";
+  character = { ...CHARACTERS[level], name: bot.character ? CHARACTERS[level].name : bot.name };
   $("figure").dataset.char = level;
+  $("bot-name").classList.toggle("long", character.name.length > 7);
   // (SVG elements have no .hidden property, so set the attribute itself)
   for (const svg of document.querySelectorAll(".char")) svg.toggleAttribute("hidden", svg.id !== `char-${level}`);
   for (const drink of document.querySelectorAll(".posavasos")) drink.toggleAttribute("hidden", drink.dataset.for !== level);
@@ -178,11 +220,12 @@ function newGame(chosen) {
   counted = false;
   selected = null;
   $("seat-bot").classList.remove("cheers");
-  const data = call(() => session.new_game(level));
+  const data = call(() => session.new_game(chosen));
   if (!data) return;
   if (data.current_seat === YOU) say(pick(character.says.youOpen), { t: data.opening_tile }, "idle");
   render(data);
-  maybeBotTurn();
+  if (state.finished) reactToEnd();   // a bot that can't even be built loses at once
+  else maybeBotTurn();
 }
 
 function yourMove(fn, reaction) {
@@ -759,18 +802,4 @@ $("rules-sheet").addEventListener("click", (e) => {
   if (outside) $("rules-sheet").close();
 });
 window.addEventListener("resize", () => { if (state) renderBoard(); });
-
-drawCellar();
-renderScore();
-loadEngine()
-  .then((module) => {
-    session = module;
-    $("new-game").querySelector("button").disabled = false;
-    newGame($("level").value);
-  })
-  .catch((err) => {
-    const msg = document.createElement("p");
-    msg.className = "board-msg";
-    msg.textContent = `No se pudo cargar el juego: ${err.message || err.name || err}`;
-    $("board").replaceChildren(msg);
-  });
+// (the page starts in views.js, which loads the engine and moves between the sections)

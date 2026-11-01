@@ -4,6 +4,7 @@ Game logic for classic domino (one line of play, two open ends), for 2 players.
 The game itself is played on a separate platform; this repo is the rules engine it calls.
 
 - **Play:** https://zenasaez-oss.github.io/DOMINO/
+- **Ranking** of every bot: https://zenasaez-oss.github.io/DOMINO/web/#ranking
 - **Documentation**, including the API for bots and a tutorial to write your own:
   https://domino-game.readthedocs.io/en/latest/ (built from the `docs/` folder; `mkdocs serve`
   shows it locally).
@@ -31,8 +32,9 @@ The game itself is played on a separate platform; this repo is the rules engine 
 | `domino/game.py` | `Game`: ties it all together for the platform |
 | `domino/bots/` | The bots: the `Bot` base class (`base.py`), automatic discovery (`registry.py`) and our four bots, `GreedyBot` (easy), `ScoringBot` (medium), `MonteCarloBot` (hard), `ExpertBot` (superhard) |
 | `domino/referee.py` | Plays games between bots; a bot that crashes, plays illegally or runs out of time loses |
+| `domino/tournament.py` | Every bot against every other (round robin): the website's tournament and the published ranking |
 | `main.py` | Developer check: plays one random game and prints the result |
-| `tools/` | Developer tools only: terminal games against each bot (`play*.py`) and bot-vs-bot matches (`arena.py`) |
+| `tools/` | Developer tools only: terminal games against each bot (`play*.py`), bot-vs-bot matches (`arena.py`) and the ranking tournament (`tournament.py`) |
 | `tests/` | Unit tests |
 
 ## Using it from the platform
@@ -111,28 +113,42 @@ python -m tools.play_scoring                      # play against the medium (sco
 python -m tools.play_montecarlo                   # play against the hard (Monte Carlo) bot
 python -m tools.play_expert                       # play against the superhard (expert) bot
 python -m tools.arena montecarlo scoring -n 200   # bot against bot, win counts (any bot in domino/bots/)
+python -m tools.tournament -n 10                  # every bot against every other, ranked
 python -m unittest discover -s tests -t .         # run the tests
 ```
 
 ## Web
 
-`web/` is the page where a person plays a full game against a bot of their choice, all from
-`domino/bots/`: easy = heaviest tile, medium = the scoring bot, hard = the Monte Carlo bot,
-superhard = the expert bot.
+`web/` is the website. From its home screen you can:
+
+- **Jugar**: play a full game against any bot in `domino/bots/`. Our four have a character each
+  (easy = heaviest tile, medium = the scoring bot, hard = the Monte Carlo bot, superhard = the
+  expert bot); any other bot is played by the Stranger, under the bot's own name.
+- **Torneo**: every bot you pick against every other, played in your browser.
+- **Ranking**: the official ranking, played on GitHub on every push to `main` with the 5-second
+  time limit (`tools/tournament.py`), with head-to-head results.
+- **Información**: the rules, every bot with its authors and description, and how to write yours.
+
+**A new bot needs no change to the website**: every file in `domino/bots/` is loaded, and the
+registry says who the bots are. See the
+[tournament and ranking docs](https://domino-game.readthedocs.io/en/latest/tournament/).
+
 It is a static page:
 [Pyodide](https://pyodide.org) runs the real `domino/` engine inside the browser,
 so there is no server and nothing to install. GitHub Pages publishes it on every
-push to `main` (`.github/workflows/pages.yml`).
+push to `main` (`.github/workflows/pages.yml`), together with the ranking.
 
 Try it on your computer, from the project folder:
 
-    python -m http.server 8000      # then open http://localhost:8000/web/
+    python -m tools.tournament -n 10 --out web/ranking.json   # optional: a ranking to show
+    python -m http.server 8001      # then open http://localhost:8001/web/
 
 | Path | What it does |
 |---|---|
-| `web/session.py` | Bridge to the engine: runs the bot's turns, hides the bot's tiles, answers in JSON |
-| `web/index.html` | The page |
-| `web/static/app.js` | Loads the engine with Pyodide, draws the board and your hand, sends your moves |
+| `web/session.py` | Bridge to the engine: runs the bot's turns, hides the bot's tiles, lists the bots, plays the tournament, answers in JSON |
+| `web/index.html` | The page and its sections |
+| `web/static/app.js` | Loads the engine with Pyodide (every bot file included), draws the board and your hand, sends your moves |
+| `web/static/views.js` | Home, tournament, ranking and information sections; starts the page |
 | `web/static/style.css` | Looks |
 
 ## The Monte Carlo bot

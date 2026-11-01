@@ -67,3 +67,12 @@ def find_bots(package="domino.bots"):
     if problems:
         raise BotRegistryError("\n".join(problems))
     return bots
+
+
+def describe(bot_class):
+    """Who a bot is, as plain data for pages and tables: {"name", "authors", "description"}."""
+    authors = bot_class.get_authors()
+    if isinstance(authors, str):      # one author written without the list
+        authors = [authors]
+    return {"name": bot_class.get_name(), "authors": [str(a) for a in authors],
+            "description": str(bot_class.get_description())}
