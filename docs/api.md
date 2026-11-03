@@ -37,6 +37,8 @@ Generated from the code's docstrings. For the ideas behind it, read
 
 ::: domino.bots.registry.BotRegistryError
 
+::: domino.bots.registry.describe
+
 ## The referee
 
 ::: domino.referee.play_match
@@ -54,3 +56,11 @@ Generated from the code's docstrings. For the ideas behind it, read
 ::: domino.referee.tell_bot
 
 ::: domino.referee.BotFault
+
+## The tournament
+
+See [Tournament and ranking](tournament.md).
+
+::: domino.tournament.Tournament
+
+::: domino.tournament.schedule

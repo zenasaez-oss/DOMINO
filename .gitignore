@@ -8,3 +8,6 @@ build/
 dist/
 *.egg-info/
 site/
+# made by tools/tournament.py and pages.yml when the site is published
+web/ranking.json
+web/bots.json

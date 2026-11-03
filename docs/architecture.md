@@ -6,12 +6,13 @@ domino/            the game, as a Python library (no printing, no input)
 ├── rules.py       what's legal, who opens, who wins
 ├── board.py, deck.py, hand.py, domino.py, player.py, turn_manager.py
 ├── referee.py     plays games between bots; a bot that misbehaves loses
+├── tournament.py  every bot against every other: the tournament and the ranking
 └── bots/          the bots
     ├── base.py        Bot: the class every bot inherits from; check_move
     ├── registry.py    find_bots(): finds every bot in this folder automatically
     └── greedy.py, scoring.py, montecarlo.py, expert.py
-web/               the website: index.html, static/app.js, static/style.css, session.py
-tools/             developer tools: terminal games, arena.py (bot against bot)
+web/               the website: index.html, static/app.js, static/views.js, static/style.css, session.py
+tools/             developer tools: terminal games, arena.py (bot against bot), tournament.py (the ranking)
 tests/             every test, including the checks every bot must pass
 ```
 
@@ -68,8 +69,8 @@ find a bug), comparisons fair, and tests independent of luck.
 
 !!! note "Two limits of the time limit"
     - Python can't force a thread to stop. A bot stuck in an endless loop loses and the game
-      goes on, but the loop keeps running in the background until the program ends. A
-      tournament should run each game in its own process.
+      goes on, but the loop keeps running in the background until the program ends. That's
+      why the published ranking (`tools/tournament.py`) plays its games in worker processes.
     - The website has no time limit: Python in the browser (Pyodide) can't start threads, which
       the clock needs. Crashes and illegal moves are still caught there.
 
@@ -86,9 +87,19 @@ click → app.js → session.py (in Pyodide) → Game and the bot → JSON → a
 `web/session.py` is the bridge: it runs the bot's turns through the referee, keeps a log for the
 page, hides the bot's tiles until the game ends, and answers in JSON.
 
+The page has five sections, each with its own link (`#jugar`, `#torneo`, `#ranking`, `#info`):
+a home screen, a game against any bot, a [tournament](tournament.md) played in the browser, the
+published ranking, and the rules with every bot's name, authors and description.
+
+**Every bot shows up by itself.** A static page can't list a folder, so when the site is
+published, `pages.yml` writes `bots.json` with the files in `domino/bots/` (on your computer,
+`python -m http.server` shows the folder instead). The page loads them all and asks the registry
+(`session.list_bots()`) who the bots are. Our four bots have a character each; any other bot is
+played by the Stranger, who takes the bot's own name.
+
 ## Automation (GitHub Actions)
 
 | Workflow | When | What |
 |---|---|---|
 | `.github/workflows/tests.yml` | every pull request, and every push to `main` | runs every test, including the checks every bot must pass |
-| `.github/workflows/pages.yml` | every push to `main` | runs the tests, then publishes the website |
+| `.github/workflows/pages.yml` | every push to `main` | runs the tests, plays the [ranking tournament](tournament.md), then publishes the website with the ranking |

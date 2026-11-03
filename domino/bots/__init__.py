@@ -11,7 +11,7 @@ find_bots() (registry.py) finds every bot in this folder automatically, so addin
 adding a file here. LEVELS below is the website's own pick of four bots, one per level.
 """
 from .base import Bot, IllegalMove, check_move
-from .registry import BotRegistryError, find_bots, scan
+from .registry import BotRegistryError, describe, find_bots, scan
 from .expert import ExpertBot
 from .greedy import GreedyBot
 from .montecarlo import MonteCarloBot

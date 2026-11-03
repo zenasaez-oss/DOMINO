@@ -18,7 +18,7 @@
   </div>
 
   <header class="top">
-    <div class="brand">
+    <a class="brand" href="#" aria-label="Dominó: inicio">
       <!-- a classic black tile, the double six, framed in gold -->
       <svg class="brand-tile" viewBox="0 0 40 72" aria-hidden="true">
         <rect x="1.5" y="1.5" width="37" height="69" rx="6" />
@@ -36,9 +36,16 @@
         <h1>Dominó</h1>
         <p class="tagline">Un juego clásico de dos personas</p>
       </div>
-    </div>
-    <form id="new-game" class="controls">
-      <!-- the scoreboard and Paco's difficulty, side by side in one bar -->
+    </a>
+    <!-- the sections of the site (app.js shows one at a time, by the address's #) -->
+    <nav class="nav" aria-label="Secciones">
+      <a href="#jugar">Jugar</a>
+      <a href="#torneo">Torneo</a>
+      <a href="#ranking">Ranking</a>
+      <a href="#info">Información</a>
+    </nav>
+    <form id="new-game" class="controls" data-only="play" hidden>
+      <!-- the scoreboard and who you play against, side by side in one bar -->
       <div class="hud">
         <section class="scoreboard" aria-label="Marcador">
           <h2 class="hud-title">Marcador</h2>
@@ -49,12 +56,10 @@
           </div>
         </section>
         <div class="difficulty">
-          <label for="level" class="hud-title">Elige tu personaje</label>
+          <label for="level" class="hud-title">Elige tu rival</label>
+          <!-- filled by app.js with every bot in domino/bots/ -->
           <select id="level" name="level">
-            <option value="easy">Paquito · fácil</option>
-            <option value="medium">Rosa · medio</option>
-            <option value="hard" selected>Paco · difícil</option>
-            <option value="superhard">C06 · experto</option>
+            <option value="">Cargando…</option>
           </select>
         </div>
         <div class="hud-action">
@@ -64,7 +69,56 @@
     </form>
   </header>
 
-  <main class="layout">
+  <!-- home: what you can do here -->
+  <main class="page home" data-view="home">
+    <section class="hero">
+      <p class="eyebrow">Casino de la Plaza</p>
+      <h2 class="hero-title">¿A qué jugamos hoy?</h2>
+      <p class="hero-text">Juega contra el bot que quieras, monta un torneo entre todos o mira quién manda en el ranking.</p>
+      <p class="hero-count" id="home-count">Cargando los bots…</p>
+    </section>
+    <div class="menu">
+      <a class="menu-card" href="#jugar">
+        <svg class="menu-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="14" y="3" width="20" height="42" rx="4" class="mi-tile" />
+          <line x1="17" y1="24" x2="31" y2="24" class="mi-line" />
+          <circle cx="19.5" cy="9.5" r="2.3" /><circle cx="28.5" cy="17.5" r="2.3" />
+          <circle cx="24" cy="13.5" r="2.3" /><circle cx="19.5" cy="30.5" r="2.3" /><circle cx="28.5" cy="38.5" r="2.3" />
+        </svg>
+        <span class="menu-title">Jugar</span>
+        <span class="menu-sub">Una partida contra el bot que elijas</span>
+      </a>
+      <a class="menu-card" href="#torneo">
+        <svg class="menu-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path class="mi-line" d="M4 8 H14 V18 H24 M4 28 H14 V18 M24 18 V13 M24 18 V23 M24 13 H34 V24 H44 M24 23 V35 M4 40 H24 V35 M34 24 V35 H24" />
+          <circle cx="44" cy="24" r="3.4" />
+        </svg>
+        <span class="menu-title">Torneo</span>
+        <span class="menu-sub">Todos los bots contra todos, aquí mismo</span>
+      </a>
+      <a class="menu-card" href="#ranking">
+        <svg class="menu-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <rect class="mi-tile" x="17" y="14" width="14" height="30" rx="2" />
+          <rect class="mi-tile" x="3" y="24" width="14" height="20" rx="2" />
+          <rect class="mi-tile" x="31" y="30" width="14" height="14" rx="2" />
+          <path d="M24 3 l2.6 5.3 5.8 0.8 -4.2 4.1 1 5.8 -5.2 -2.7 -5.2 2.7 1 -5.8 -4.2 -4.1 5.8 -0.8 Z" />
+        </svg>
+        <span class="menu-title">Ranking</span>
+        <span class="menu-sub">La clasificación oficial de todos los bots</span>
+      </a>
+      <a class="menu-card" href="#info">
+        <svg class="menu-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="mi-tile" cx="24" cy="24" r="20" />
+          <circle cx="24" cy="14" r="3" />
+          <rect x="21" y="20" width="6" height="16" rx="2" />
+        </svg>
+        <span class="menu-title">Información</span>
+        <span class="menu-sub">Las reglas, los bots y cómo crear el tuyo</span>
+      </a>
+    </div>
+  </main>
+
+  <main class="layout" data-view="play" hidden>
     <section class="game">
       <!-- the character you play against, sitting across the table: the body is behind the
            table; forearms, hands, tiles and drink are drawn in front of it. One drawing per
@@ -206,6 +260,51 @@
               <path d="M160 48 q5 4 10 0 M160 48 q4 5 0 10 M180 48 q-5 4 -10 0 M180 48 q-4 5 0 10 M160 68 q5 -4 10 0 M160 68 q4 -5 0 -10 M180 68 q-5 -4 -10 0 M180 68 q-4 -5 0 -10" />
             </g>
           </svg>
+          <!-- the Stranger, for any bot without a character of its own: a card player in a
+               fedora and dark glasses; he takes the bot's own name -->
+          <svg class="char" id="char-guest" data-mood="idle" data-face="22 36 156 156" viewBox="10 30 180 230" role="img" aria-label="Un forastero con sombrero y gafas oscuras" hidden>
+            <rect class="p-chair" x="30" y="118" width="140" height="150" rx="20" />
+            <rect class="p-chair-slat" x="44" y="132" width="112" height="10" rx="5" />
+            <path class="g-coat" d="M30 262 C30 200 50 168 100 164 C150 168 170 200 170 262 Z" />
+            <path class="p-sleeve" d="M50 176 C31 186 22 210 25 238 L48 240 C46 215 50 197 59 184 Z" />
+            <path class="p-sleeve" d="M150 176 C169 186 178 210 175 238 L152 240 C154 215 150 197 141 184 Z" />
+            <path class="p-shirt" d="M80 165 L100 206 L120 165 Z" />
+            <path class="g-lapel" d="M80 165 L100 214 L74 180 Z M120 165 L100 214 L126 180 Z" />
+            <path class="g-tie" d="M96 170 L104 170 L106 196 L100 205 L94 196 Z" />
+            <path class="g-card" d="M128 196 l14 -3 l3 16 l-14 3 Z" />
+            <path class="p-skin-shade" d="M84 138 L84 160 Q100 170 116 160 L116 138 Z" />
+            <ellipse class="p-skin" cx="55" cy="114" rx="9" ry="14" />
+            <ellipse class="p-skin" cx="145" cy="114" rx="9" ry="14" />
+            <path class="p-skin" d="M57 92 C57 62 143 62 143 92 L143 118 C143 148 124 162 100 162 C76 162 57 148 57 118 Z" />
+            <path class="g-stubble" d="M66 128 C70 152 86 160 100 160 C114 160 130 152 134 128 C126 146 112 152 100 152 C88 152 74 146 66 128 Z" />
+            <!-- fedora: crown with a dent, a red band, a wide brim -->
+            <path class="g-hat" d="M60 86 C58 58 70 42 100 42 C130 42 142 58 140 86 Z" />
+            <path class="g-dent" d="M80 50 Q100 62 120 50" />
+            <path class="g-band" d="M60 74 L140 74 L140 86 L60 86 Z" />
+            <path class="g-hat" d="M36 90 C58 78 142 78 164 90 C152 99 48 99 36 90 Z" />
+            <path class="p-brow p-brow-l g-brow" d="M68 100 q12 -6 24 -1" />
+            <path class="p-brow p-brow-r g-brow" d="M132 100 q-12 -6 -24 -1" />
+            <g class="g-shades">
+              <rect x="66" y="104" width="30" height="18" rx="7" />
+              <rect x="104" y="104" width="30" height="18" rx="7" />
+              <path d="M96 111 q4 -3 8 0" />
+              <path d="M66 110 L57 106 M134 110 L143 106" />
+            </g>
+            <path class="g-shine" d="M71 108 l7 0 M109 108 l7 0" />
+            <circle class="p-cheek" cx="69" cy="134" r="8" />
+            <circle class="p-cheek" cx="131" cy="134" r="8" />
+            <ellipse class="p-flush" cx="100" cy="134" rx="38" ry="9" />
+            <path class="p-nose" d="M100 112 C95 122 90 128 93 133 C96 137 104 137 107 133 C110 128 105 122 100 112 Z" />
+            <path class="p-mouth m-idle" d="M89 146 q11 4 22 -1" />
+            <path class="p-mouth m-think" d="M93 147 q7 -2 14 1" />
+            <path class="p-mouth-open m-happy" d="M86 143 q14 17 28 0 Z" />
+            <path class="p-mouth m-sad" d="M90 150 q10 -7 20 0" />
+            <path class="p-mouth m-angry" d="M88 151 q12 -9 24 0" />
+            <path class="g-pick m-idle" d="M110 145 l17 -6" />
+            <g class="p-anger">
+              <path d="M160 48 q5 4 10 0 M160 48 q4 5 0 10 M180 48 q-5 4 -10 0 M180 48 q-4 5 0 10 M160 68 q5 -4 10 0 M160 68 q4 -5 0 -10 M180 68 q-5 -4 -10 0 M180 68 q-4 -5 0 -10" />
+            </g>
+          </svg>
           <!-- Paco, an old man in a flat cap (hard) -->
           <svg class="char" id="char-hard" data-mood="idle" data-face="22 36 156 156" viewBox="10 30 180 230" role="img" aria-label="Paco, sentado al otro lado de la mesa">
             <!-- the back of his chair -->
@@ -332,6 +431,18 @@
               <path class="d-handle" d="M18 36 Q25 26 32 36" />
             </g>
           </svg>
+          <!-- the Stranger: a cup of black coffee -->
+          <svg class="posavasos" data-for="guest" viewBox="0 0 50 96" aria-hidden="true" hidden>
+            <ellipse class="p-coaster-edge" cx="25" cy="88" rx="23" ry="7" />
+            <ellipse class="p-coaster" cx="25" cy="86" rx="23" ry="7" />
+            <g class="c-lift">
+              <path class="d-steam" d="M20 44 q-4 -6 0 -12 q4 -6 0 -12 M29 44 q-4 -6 0 -12 q4 -6 0 -12" />
+              <ellipse class="d-saucer" cx="25" cy="81" rx="19" ry="4.5" />
+              <path class="d-cup-handle" d="M37 56 q9 0 8 8 q-1 7 -9 7" />
+              <path class="d-cup" d="M11 50 L39 50 L36 74 Q35 79 30 79 L20 79 Q15 79 14 74 Z" />
+              <ellipse class="d-coffee" cx="25" cy="50" rx="14" ry="2.8" />
+            </g>
+          </svg>
           <!-- Paco: his glass of red wine -->
           <svg class="posavasos" data-for="hard" viewBox="0 0 50 96" aria-hidden="true">
             <defs>
@@ -425,6 +536,78 @@
 
   </main>
 
+  <!-- a tournament between the bots you pick, played here in the browser -->
+  <main class="page" data-view="tournament" hidden>
+    <header class="page-head">
+      <h2 class="page-title">Torneo</h2>
+      <p class="page-text">Todos contra todos: cada pareja de bots juega las mismas partidas, cambiando de asiento con el mismo reparto, y gana quien más partidas gane. Se juega aquí mismo, con el mismo árbitro que el ranking.</p>
+    </header>
+    <section class="panel" aria-labelledby="t-setup-title">
+      <h3 class="panel-title" id="t-setup-title">Participantes</h3>
+      <div class="picks" id="t-bots"><p class="muted">Cargando los bots…</p></div>
+      <div class="t-controls">
+        <label class="field">
+          <span class="field-label">Partidas por pareja</span>
+          <select id="t-games">
+            <option value="2" selected>2 (una en cada asiento)</option>
+            <option value="4">4</option>
+            <option value="10">10</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-play" id="t-start" disabled>Empezar torneo</button>
+        <button type="button" class="btn btn-action" id="t-stop" hidden>Parar</button>
+      </div>
+      <p class="hint" id="t-hint">Los bots más fuertes piensan hasta un segundo por jugada: un torneo con todos tarda un par de minutos.</p>
+    </section>
+    <section class="panel" id="t-live" hidden aria-live="polite">
+      <div class="t-progress-head">
+        <h3 class="panel-title" id="t-status"></h3>
+        <span class="muted" id="t-count"></span>
+      </div>
+      <div class="bar"><span id="t-bar"></span></div>
+      <p class="t-last" id="t-last"></p>
+      <div class="table-wrap" id="t-table"></div>
+    </section>
+  </main>
+
+  <!-- the official ranking: published by GitHub on every change (tools/tournament.py) -->
+  <main class="page" data-view="ranking" hidden>
+    <header class="page-head">
+      <h2 class="page-title">Ranking</h2>
+      <p class="page-text">La clasificación oficial de todos los bots de la plataforma. Se recalcula sola cada vez que cambia el proyecto: todos contra todos, con un límite de tiempo por jugada, y un bot que rompe las reglas pierde la partida.</p>
+    </header>
+    <section class="panel" id="ranking-body"><p class="muted">Cargando el ranking…</p></section>
+  </main>
+
+  <!-- the game, the bots and how to add yours -->
+  <main class="page" data-view="info" hidden>
+    <header class="page-head">
+      <h2 class="page-title">Información</h2>
+      <p class="page-text">Dominó clásico para dos jugadores, con el doble seis. Juegas contra bots: programas que eligen su jugada viendo solo lo que vería cualquier jugador en la mesa.</p>
+    </header>
+    <section class="panel" aria-labelledby="info-rules-title">
+      <h3 class="panel-title" id="info-rules-title">Cómo se juega</h3>
+      <!-- a copy of the rules sheet, made by app.js -->
+      <div class="rules-inline" id="rules-inline"></div>
+    </section>
+    <section class="panel" aria-labelledby="info-bots-title">
+      <h3 class="panel-title" id="info-bots-title">Los bots</h3>
+      <p class="page-text">Todos los bots de la carpeta <code>domino/bots/</code> aparecen aquí solos, en el torneo y en el ranking.</p>
+      <div class="bot-grid" id="bot-cards"><p class="muted">Cargando los bots…</p></div>
+      <div id="bot-problems"></div>
+    </section>
+    <section class="panel" aria-labelledby="info-own-title">
+      <h3 class="panel-title" id="info-own-title">Crea tu propio bot</h3>
+      <p class="page-text">Un bot es un archivo de Python con una clase que hereda de <code>Bot</code> y elige una jugada. Envíalo con una pull request: si pasa las pruebas automáticas, entra en el juego, el torneo y el ranking.</p>
+      <ul class="links">
+        <li><a href="https://domino-game.readthedocs.io/en/latest/tutorial/" target="_blank" rel="noopener">Tutorial: tu primer bot</a></li>
+        <li><a href="https://domino-game.readthedocs.io/en/latest/" target="_blank" rel="noopener">Documentación y referencia de la API</a></li>
+        <li><a href="https://github.com/zenasaez-oss/DOMINO/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Cómo enviar tu bot</a></li>
+        <li><a href="https://github.com/zenasaez-oss/DOMINO" target="_blank" rel="noopener">El código en GitHub</a></li>
+      </ul>
+    </section>
+  </main>
+
   <div id="confetti" class="confetti" aria-hidden="true"></div>
 
   <!-- the rules, on a sheet of paper -->
@@ -435,7 +618,7 @@
       <ul>
         <li>Se juega con las 28 fichas del doble seis.</li>
         <li>Cada jugador recibe 7 fichas. Las otras 14 forman el pozo.</li>
-        <li>En la primera partida sale quien tenga el doble más alto. Después se van turnando: una partida sale Paco y la siguiente tú.</li>
+        <li>En la primera partida sale quien tenga el doble más alto. Después se van turnando: una partida sale tu rival y la siguiente tú.</li>
         <li>Quien sale pone su doble más alto. Si no tiene dobles, su ficha más alta.</li>
       </ul>
     </section>
@@ -466,5 +649,6 @@
   </dialog>
 
   <script src="static/app.js"></script>
+  <script src="static/views.js"></script>
 </body>
 </html>
