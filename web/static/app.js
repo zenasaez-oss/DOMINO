@@ -370,20 +370,31 @@ function cssPx(name) {
   return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
 }
 
-// Split the line into rows that fit the table; doubles stand crosswise and take less room
+// Split the line into rows that fit the table; doubles stand crosswise and take less room.
+// The line turns without a gap: a row's last tile ends right above the next row's first tile
+// (same edge, so the number they share is one under the other). So every row knows where it
+// starts: `head` is that edge in pixels from the table's left side (the left edge of a row that
+// runs left to right, the right edge of one that comes back).
 function snakeRows(board, width) {
   const gap = 3, wide = cssPx("--tile-w"), narrow = cssPx("--tile-h");
-  const rows = [[]];
-  let used = 0;
-  board.forEach((tile, i) => {
-    const w = (isDouble(tile) ? narrow : wide) + gap;
-    if (used + w > width && rows.at(-1).length) {
-      rows.push([]);
-      used = 0;
+  const size = (tile) => (isDouble(tile) ? narrow : wide);
+  const rows = [];
+  let head = 0;                        // where the next row starts
+  let i = 0;
+  while (i < board.length) {
+    const back = rows.length % 2 === 1;
+    const room = Math.max(back ? head : width - head, wide);
+    const indexes = [];
+    let used = 0;
+    while (i < board.length) {
+      const next = used + (indexes.length ? gap : 0) + size(board[i]);
+      if (next > room && indexes.length) break;
+      indexes.push(i++);
+      used = next;
     }
-    rows.at(-1).push(i);
-    used += w;
-  });
+    rows.push({ indexes, head, back });
+    head = back ? head - used : head + used;
+  }
   return rows;
 }
 
@@ -414,15 +425,21 @@ function renderBoard() {
   const botPlayed = new Set(state.bot_turn.filter((e) => e.action === "play").map((e) => tileKey(e.tile)));
   const last = tiles.length - 1;
 
-  const rows = snakeRows(tiles, board.clientWidth - 8);
-  rows.forEach((indexes, r) => {
+  const width = board.clientWidth - 4;   // the room inside the board's padding
+  const rows = snakeRows(tiles, width);
+  rows.forEach(({ indexes, head, back }, r) => {
     const row = document.createElement("div");
-    const back = r % 2 === 1;  // odd rows run right to left, so their tiles are shown turned
+    // odd rows run right to left, so their tiles are shown turned (the number that joins the
+    // previous tile is on the right)
+    const goesOn = r < rows.length - 1;   // the line continues in the next row, under this one's last tile
     row.className = "row" + (back ? " back" : "") + (rows.length === 1 ? " solo" : "");
+    if (rows.length > 1) row.style[back ? "paddingRight" : "paddingLeft"] = `${back ? width - head : head}px`;
     for (const i of indexes) {
       const t = tiles[i];
       const el = tileEl(back ? [t[1], t[0]] : t, { vertical: isDouble(t) });
       if (i === 0 || i === last) el.classList.add("open-end");
+      // a short bar joins the row's last tile to the first tile of the next row
+      if (goesOn && i === indexes.at(-1)) el.classList.add("turn-down", back ? "turn-left" : "turn-right");
       const side = i === 0 ? "L" : i === last ? "R" : null;
       if (side && targetSides.includes(side)) {
         el.classList.add("target");
