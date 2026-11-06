@@ -162,6 +162,21 @@ class TestEveryBotOnThePage(unittest.TestCase):
             play_random_game("Listener")
         self.assertTrue(heard)
 
+    def test_the_expert_plays_without_threads(self):
+        # Pyodide (the browser) can't start threads. The expert used to be built through the
+        # referee's make_bot, which took its `time_limit` option as the referee's clock and so
+        # needed a thread: it lost every game with "can't start new thread".
+        def no_threads(self):
+            raise RuntimeError("can't start new thread")
+
+        with patch("threading.Thread.start", no_threads):
+            for _ in range(3):
+                state = play_random_game("superhard")
+                self.assertFalse([e for e in state["log"] if e["action"] == "forfeit"], state["log"])
+
+    def test_the_expert_gets_its_thinking_time(self):
+        self.assertEqual(Session("superhard").bot.time_limit, session.SUPER_THINK)
+
     def test_a_bot_that_cannot_be_built_loses_at_once(self):
         class Broken(GreedyBot):
             @classmethod
