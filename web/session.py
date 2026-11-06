@@ -21,11 +21,11 @@ double in their hand (or their heaviest tile if they have no double).
 import json
 
 from domino.board import board_ends
-from domino.bots import LEVELS, ExpertBot, describe, scan
+from domino.bots import LEVELS, Bot, ExpertBot, describe, scan
 from domino.game import Game
 from domino.hand import highest_double, highest_tile
 from domino.player import Player
-from domino.referee import BotFault, ask_bot, make_bot, tell_bot
+from domino.referee import BotFault, ask_bot, tell_bot
 from domino.tournament import Tournament
 
 YOU, BOT = 0, 1
@@ -63,7 +63,16 @@ class Session:
             options = {"time_limit": SUPER_THINK, "global_opening": opener is None,
                        "memory": your_style.get("evidence")}
         try:
-            self.bot = make_bot(cls, BOT, **options)
+            # Built here and not with make_bot(): the referee's make_bot takes a `time_limit` of
+            # its own (the clock, which needs a thread), and it would swallow the expert's
+            # `time_limit` (how long it thinks). Pyodide can't start threads, so the expert
+            # would fail on every game with "can't start new thread" and you'd win by default.
+            try:
+                self.bot = cls.create(BOT, None, **options)
+            except Exception as error:   # noqa: BLE001 - any crash in create() is a fault
+                raise BotFault(BOT, "error", f"{type(error).__name__}: {error}") from None
+            if not isinstance(self.bot, Bot):
+                raise BotFault(BOT, "error", f"create() returned {self.bot!r}, not a Bot")
         except BotFault as fault:     # the bot can't even be built: you win
             self.bot = None
             self.last_bot_turn = [self._forfeit(fault)]
