@@ -641,6 +641,20 @@ select {
 .row { display: flex; align-items: center; gap: 3px; }
 .row.back { flex-direction: row-reverse; }
 .row.solo { justify-content: center; }  /* a short line sits in the middle of the table */
+/* Where the line turns: a short bar joins the last tile of a row to the first tile of the next one
+   (they sit on the same edge, one under the other; app.js lines them up). */
+.row .tile.turn-down { position: relative; }
+.row .tile.turn-down::after {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: rgba(255, 241, 214, 0.75);
+}
+.row .tile.turn-down.turn-right::after { right: 8px; }
+.row .tile.turn-down.turn-left::after { left: 8px; }
 
 .side-pick { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 
