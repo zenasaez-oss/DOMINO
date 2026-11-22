@@ -149,7 +149,7 @@ Try it on your computer, from the project folder:
 | `web/index.html` | The page and its sections |
 | `web/static/app.js` | Loads the engine with Pyodide (every bot file included), draws the board and your hand, sends your moves |
 | `web/static/views.js` | Home, tournament, ranking and information sections; starts the page |
-| `web/static/style.css` | Looks |
+| `web/static/style.css` | Styling |
 
 ## The Monte Carlo bot
 
