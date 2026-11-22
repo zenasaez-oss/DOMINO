@@ -1,6 +1,7 @@
 # Our bots
 
-Four bots come with the game, one per difficulty level on the website. They follow exactly the
+Four bots come with the game, one per difficulty level on the website (bots sent by other teams
+are [further down](#bots-from-other-teams)). They follow exactly the
 same rules as a bot you write: they only get their [view](contract.md), and they go through the
 referee.
 
@@ -38,6 +39,26 @@ it from what's public:
   plays each candidate move out to the end in all of them.
 - **Expert** also reads the opponent's *choices*: each tile they pick is a clue about the ones
   they kept, weighed by how likely that choice was with each hand it imagines for them.
+
+## Bots from other teams
+
+Other teams wrote these bots and sent them by pull request. We reviewed each one against the
+[checklist](tutorial.md#checklist-before-opening-the-pull-request) and the tests, then merged it.
+Like every bot in `domino/bots/`, they play in the arena, the tournament and the ranking.
+
+| Bot | Name | Authors | Pull request | How it plays |
+|---|---|---|---|---|
+| `TramperoBayesianoBot` | Trampero bayesiano | Marcos Felgueroso | [#15](https://github.com/zenasaez-oss/DOMINO/pull/15) | Deduces the opponent's hand with Bayes (draws, passes, the opening and the tiles they choose), plays out many possible hands and keeps the move with the highest expected chance of winning; solves the endgame exactly. |
+| `MEUBot` | HexArena MEU | Cristina Colunga, Mónica Anzola | [#14](https://github.com/zenasaez-oss/DOMINO/pull/14) | Maximum expected utility: estimates which tiles the opponent can hold and plays the move that best combines dots played, doubles, tiles that keep fitting and the exact probability of blocking the opponent. |
+
+Measured with the arena against our strongest bot:
+
+| Match | Games | Win rate of the first bot |
+|---|---|---|
+| Expert vs Trampero bayesiano | 1000 | 51.1 % (± 3.1 %) |
+
+That interval includes 50 %, so the two are as good as tied. The [ranking](tournament.md) has
+every bot against every other one.
 
 ## Adding yours
 
